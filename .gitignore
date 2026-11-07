@@ -1,10 +1,80 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
-build/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
 dist/
-wheels/
-*.egg-info
+build/
+*.egg
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (too large for git)
+data/raw/
+data/processed/
+
+# Results (generated, not source)
+results/mlruns/
+results/figures/
+
+# MLFlow
+mlruns/
+mlartifacts/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hydra outputs
+outputs/
+multirun/
+
+
+# Verified input caches and immutable run artifacts
+data/prepared/
+data/cache/
+data/weights/
+results/runs/
+.pytest_cache/
+.ruff_cache/
+
+# Worker inputs and generated output
+/data/
+/results/
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local agent state and working notes
+/.agents/
+/.codex/
+/.aws/
+/plan.md
+/docs/archive/
+/docs/session-handoff.md
+/docs/thesis-plan.md
+/docs/literature-review.md
+/docs/review-and-fix-plan.md
+/docs/thesis-scope-verification.md
+/docs/verification-*.json
