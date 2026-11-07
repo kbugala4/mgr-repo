@@ -1,0 +1,16 @@
+name: thesis-lite
+models: [mlp, tabnet, ft_transformer, realmlp, modernnca, tabm, tabpfn, logistic_regression, knn, xgboost, catboost]
+datasets: [adult, covertype, credit_fraud, higgs, amazon, santander, online_shoppers, diabetes, helena, german_credit, ionosphere, bioresponse]
+random_configurations: 25
+inner_folds: 8
+outer_seed: 42
+search_seed: 42
+runtime:
+  device: cuda
+  num_cpus: 4
+  configuration_time_limit: 3600
+  prediction_batch_size: 4096
+paths:
+  data: data
+  results: results
+model_overrides: {}

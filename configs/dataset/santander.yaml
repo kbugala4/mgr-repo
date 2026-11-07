@@ -1,0 +1,9 @@
+name: santander
+source: local_csv
+source_id: 0
+target: TARGET
+n_classes: 2
+local_file: santander/train.csv
+exclude:
+- ID
+version: 1

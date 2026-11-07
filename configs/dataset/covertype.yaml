@@ -1,0 +1,6 @@
+name: covertype
+source: openml
+source_id: 1596
+target: class
+n_classes: 7
+version: 4

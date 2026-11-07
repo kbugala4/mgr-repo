@@ -1,0 +1,14 @@
+name: online_shoppers
+source: uci_zip
+source_id: 468
+target: Revenue
+n_classes: 2
+categorical:
+- Month
+- OperatingSystems
+- Browser
+- Region
+- TrafficType
+- VisitorType
+- Weekend
+version: 1

@@ -1,0 +1,5 @@
+name: knn
+type: non_dl
+params:
+  cat_threshold: 1000000 # One-hot nominal values; no arbitrary ordinal distances.
+search_space: {}

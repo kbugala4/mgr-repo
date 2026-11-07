@@ -1,0 +1,6 @@
+name: credit_fraud
+source: openml
+source_id: 1597
+target: Class
+n_classes: 2
+version: 1

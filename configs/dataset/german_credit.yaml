@@ -1,0 +1,6 @@
+name: german_credit
+source: uci_zip
+source_id: 144
+target: class
+n_classes: 2
+version: 1

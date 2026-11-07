@@ -1,0 +1,6 @@
+name: ionosphere
+source: uci_zip
+source_id: 52
+target: class
+n_classes: 2
+version: 1

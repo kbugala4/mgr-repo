@@ -1,0 +1,15 @@
+name: adult
+source: openml
+source_id: 1590
+target: class
+n_classes: 2
+categorical:
+- workclass
+- education
+- marital-status
+- occupation
+- relationship
+- race
+- sex
+- native-country
+version: 2

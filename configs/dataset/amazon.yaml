@@ -1,0 +1,6 @@
+name: amazon
+source: openml
+source_id: 4135
+target: target
+n_classes: 2
+version: 1

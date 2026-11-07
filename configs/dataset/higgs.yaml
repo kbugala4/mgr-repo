@@ -1,0 +1,6 @@
+name: higgs
+source: openml
+source_id: 23512
+target: class
+n_classes: 2
+version: 2

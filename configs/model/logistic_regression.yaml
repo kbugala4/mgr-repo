@@ -1,0 +1,15 @@
+name: logistic_regression
+type: non_dl
+params:
+  C: 1.0
+  max_iter: 1000
+  solver: lbfgs
+search_space:
+  C:
+  - float_log
+  - 0.0001
+  - 100.0
+  solver:
+  - categorical
+  - - lbfgs
+    - saga

@@ -1,0 +1,37 @@
+name: xgboost
+type: non_dl
+params:
+  n_estimators: 300
+  max_depth: 6
+  learning_rate: 0.1
+  subsample: 0.8
+  colsample_bytree: 0.8
+search_space:
+  n_estimators:
+  - int
+  - 100
+  - 1000
+  max_depth:
+  - int
+  - 3
+  - 10
+  learning_rate:
+  - float_log
+  - 0.01
+  - 0.3
+  subsample:
+  - float
+  - 0.6
+  - 1.0
+  colsample_bytree:
+  - float
+  - 0.6
+  - 1.0
+  reg_alpha:
+  - float_log
+  - 1.0e-08
+  - 10.0
+  reg_lambda:
+  - float_log
+  - 1.0e-08
+  - 10.0

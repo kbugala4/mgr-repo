@@ -1,0 +1,41 @@
+name: mlp
+type: dl
+params:
+  hidden_dims:
+  - 256
+  - 128
+  dropout: 0.1
+  learning_rate: 0.001
+  batch_size: 256
+  epochs: 100
+  weight_decay: 0.0001
+search_space:
+  hidden_dims:
+  - categorical
+  - - - 128
+      - 64
+    - - 256
+      - 128
+    - - 512
+      - 256
+      - 128
+    - - 256
+      - 256
+  dropout:
+  - float
+  - 0.0
+  - 0.5
+  learning_rate:
+  - float_log
+  - 0.0001
+  - 0.01
+  batch_size:
+  - categorical
+  - - 64
+    - 128
+    - 256
+    - 512
+  weight_decay:
+  - float_log
+  - 1.0e-06
+  - 0.01

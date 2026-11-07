@@ -1,0 +1,55 @@
+name: ft_transformer
+type: dl
+params:
+  n_blocks: 3
+  d_token: 192
+  attention_n_heads: 8
+  attention_dropout: 0.2
+  ffn_d_hidden: 256
+  ffn_dropout: 0.1
+  residual_dropout: 0.0
+  learning_rate: 0.0001
+  batch_size: 256
+  epochs: 100
+  weight_decay: 1.0e-05
+search_space:
+  d_token:
+  - categorical
+  - - 64
+    - 128
+    - 192
+    - 256
+  n_blocks:
+  - int
+  - 1
+  - 4
+  attention_n_heads:
+  - categorical
+  - - 4
+    - 8
+  attention_dropout:
+  - float
+  - 0.0
+  - 0.3
+  ffn_d_hidden:
+  - categorical
+  - - 128
+    - 256
+    - 512
+  ffn_dropout:
+  - float
+  - 0.0
+  - 0.3
+  learning_rate:
+  - float_log
+  - 1.0e-05
+  - 0.001
+  weight_decay:
+  - float_log
+  - 1.0e-06
+  - 0.001
+  batch_size:
+  - categorical
+  - - 128
+    - 256
+    - 512
