@@ -1,0 +1,16 @@
+services:
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    user: "${THESIS_UID:-1000}:${THESIS_GID:-1000}"
+    gpus: all
+    shm_size: 8gb
+    volumes:
+      - ../data:/app/data
+      - ../results:/app/results
+      - ../configs:/app/configs:ro
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      TABPFN_TOKEN: ${TABPFN_TOKEN:-}
+    command: ["doctor"]

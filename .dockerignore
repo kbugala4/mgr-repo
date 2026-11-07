@@ -1,0 +1,12 @@
+# Send only build inputs; workspace credentials, data and artifacts stay outside the context.
+**
+!pyproject.toml
+!uv.lock
+!src/
+!src/**
+!configs/
+!configs/**
+!docker/
+!docker/Dockerfile
+**/__pycache__/
+**/*.pyc
