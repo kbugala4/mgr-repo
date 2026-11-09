@@ -1,7 +1,7 @@
-"""Abstract base class for all models (DL and non-DL).
+"""Abstract base class for local model wrappers (DL and non-DL).
 
-Every model in the benchmark implements this interface, enabling
-uniform training, evaluation, and hyperparameter tuning.
+The local registry uses this interface. The experiment catalog also includes
+native AutoGluon/TabArena models that do not inherit from BaseModel.
 
 Models receive raw DataFrames and own fold-local imputation, scaling,
 and encoding in fit().
@@ -32,7 +32,7 @@ class PredictionResult:
 
 
 class BaseModel(ABC):
-    """Abstract base class that all models must implement.
+    """Abstract base class for the local registry's model wrappers.
 
     Models receive raw DataFrames, including missing values.
     Each model applies its own preprocessing in fit() and stores the
@@ -76,7 +76,7 @@ class BaseModel(ABC):
         inside this method and store fitted transformers for predict().
 
         Args:
-            X_train: Training features (DataFrame, imputed but not scaled).
+            X_train: Raw training features; missing values are allowed.
             y_train: Training labels (int-encoded).
             X_val: Validation features (for early stopping).
             y_val: Validation labels.
@@ -91,7 +91,7 @@ class BaseModel(ABC):
         Must apply the same preprocessing learned in fit().
 
         Args:
-            X: Feature DataFrame (imputed but not scaled).
+            X: Raw feature DataFrame with the training feature schema.
 
         Returns:
             1-D array of predicted class labels.
@@ -104,7 +104,7 @@ class BaseModel(ABC):
         Must apply the same preprocessing learned in fit().
 
         Args:
-            X: Feature DataFrame (imputed but not scaled).
+            X: Raw feature DataFrame with the training feature schema.
 
         Returns:
             2-D array of shape (n_samples, n_classes).
@@ -112,10 +112,13 @@ class BaseModel(ABC):
 
     @abstractmethod
     def get_search_space(self) -> dict[str, tuple]:
-        """Return the Optuna hyperparameter search space.
+        """Return the wrapper's search-space description for direct callers.
 
-        Each entry maps a parameter name to a tuple describing its range.
-        Supported formats::
+        YAML-backed wrappers return tuples; the direct KNN wrapper returns
+        native AutoGluon spaces. ModelCatalog owns benchmark random sampling
+        and applies study-specific overrides independently of this method.
+
+        YAML tuple formats::
 
             ("int", low, high)
             ("float", low, high)

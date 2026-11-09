@@ -51,6 +51,6 @@ make check
 uv run --frozen thesis --set runtime.device=cpu smoke
 ```
 
-Smoke uses 180 synthetic rows, LR and a two-epoch MLP, default plus one random configuration, and eight folds: four jobs, 32 fold fits and six report rows. It downloads no datasets or pretrained weights. CPU-only installation uses `bash scripts/bootstrap.sh --set runtime.device=cpu`. Results appear under `results/runs/smoke/STUDY_HASH`; rerunning identical settings resumes them. These checks are infrastructure evidence, not model-ranking results.
+With the default fold setting, smoke uses 180 synthetic rows, LR and a two-epoch MLP, default plus one random configuration, and eight folds: four jobs, 32 fold fits and six report rows. It downloads no datasets or pretrained weights. For a CPU worker, use `bash scripts/bootstrap.sh --set runtime.device=cpu`; this selects CPU execution for doctor while installing the same locked dependencies, including the CUDA-enabled PyTorch wheel on Linux x86-64. Results appear under `results/runs/smoke/STUDY_HASH`; rerunning identical settings resumes them. These checks are infrastructure evidence, not model-ranking results.
 
 [Thesis topic](docs/thesis-topic.md), [model selection](docs/study-model-selection.md), [datasets](docs/dataset-selection.md) and [evaluation protocol](docs/tabarena-evaluation.md) define the study. [Implementation status](docs/implementation-status.md) separates implemented behavior from remaining qualification.

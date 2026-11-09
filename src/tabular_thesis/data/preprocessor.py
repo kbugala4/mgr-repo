@@ -1,4 +1,7 @@
-"""Minimal shared preprocessing — imputation and feature type detection.
+"""Compatibility preprocessing for direct holdout workflows.
+
+The main experiment backend does not use this shared preprocessor; each
+model fits its own transformations inside the declared training partition.
 
 This preprocessor handles ONLY what all models need:
 - Missing value imputation
@@ -118,7 +121,8 @@ class MinimalPreprocessor:
             X: Feature DataFrame.
 
         Returns:
-            Clean DataFrame with imputed values, original dtypes preserved.
+            DataFrame with imputed values and the original index/column order.
+            Categorical values are converted to strings; dtypes may change.
         """
         if not self._fitted:
             raise RuntimeError("MinimalPreprocessor must be fitted before transform()")

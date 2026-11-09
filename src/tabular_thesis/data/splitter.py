@@ -1,4 +1,8 @@
-"""Stratified train/validation/test splitting with minimal preprocessing."""
+"""Compatibility holdout splitting with minimal preprocessing.
+
+The main benchmark uses TaskSpec.outer_split and TabArena inner validation,
+not this helper's 60/20/20 split. This helper does not enforce patient groups.
+"""
 
 from __future__ import annotations
 

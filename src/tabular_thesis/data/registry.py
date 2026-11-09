@@ -31,8 +31,8 @@ class DatasetMeta:
 
     Attributes:
         name: Human-readable dataset name (e.g. 'adult').
-        source: Data source identifier ('openml', 'kaggle', 'sklearn').
-        source_id: OpenML dataset ID, if applicable.
+        source: Configured route ('openml', 'uci_zip', 'local_csv').
+        source_id: OpenML or UCI dataset ID, if applicable.
         task: Classification task type.
         target_column: Name of the target column.
         n_classes: Number of distinct classes.

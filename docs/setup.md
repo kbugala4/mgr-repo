@@ -1,6 +1,6 @@
 # Worker setup and experiment execution
 
-Updated 2026-11-06. Start with the [documentation index](README.md) and [implementation status](implementation-status.md) for accepted decisions, architecture and qualification boundaries. The intended complete-study worker is Linux x86-64 with Python 3.11 and an NVIDIA GPU. CPU execution supports small pilots and the ten trainable methods; the accepted TabPFN integration requires CUDA. No machine is assumed capable of every dataset/configuration without a resource pilot.
+Updated 2026-11-07. Start with the [documentation index](README.md) and [implementation status](implementation-status.md) for accepted decisions, architecture and qualification boundaries. The intended complete-study worker is Linux x86-64 with Python 3.11 and an NVIDIA GPU. CPU execution supports small pilots and the ten trainable methods; the accepted TabPFN integration requires CUDA. No machine is assumed capable of every dataset/configuration without a resource pilot.
 
 ## Install and check
 
@@ -18,11 +18,11 @@ bash scripts/bootstrap.sh --set runtime.device=cpu
 uv run --frozen thesis --set runtime.device=cpu --set runtime.num_cpus=1 smoke
 ```
 
-The smoke command uses 180 synthetic rows, logistic regression and a two-epoch MLP, with one default plus one random configuration and eight folds. Expect four configuration jobs, 32 fold fits and six D/T/T+E rows. It fetches no real datasets or pretrained weights. It prints `results/runs/smoke/STUDY_HASH`; repeat identical settings to verify resume, or pass that actual directory to `thesis report DIRECTORY`. The complete dependency environment is still required. A successful CPU smoke/doctor does not qualify the full eleven-method GPU matrix.
+With the default fold setting, the smoke command uses 180 synthetic rows, logistic regression and a two-epoch MLP, with one default plus one random configuration and eight folds. Expect four configuration jobs, 32 fold fits and six D/T/T+E rows. It fetches no real datasets or pretrained weights. It prints `results/runs/smoke/STUDY_HASH`; repeat identical settings to verify resume, or pass that actual directory to `thesis report DIRECTORY`. Smoke replaces the study name, model/dataset selection, all model overrides and random-configuration count with its synthetic preset. It retains `inner_folds`, seeds, runtime and paths; changing `inner_folds` changes the fit count. The complete dependency environment is still required. The CPU bootstrap flag affects doctor execution, not dependency selection or saved YAML defaults. A successful CPU smoke/doctor does not qualify the full eleven-method GPU matrix.
 
-`doctor` performs a CUDA tensor allocation and matrix operation when CUDA is requested. It does not repair drivers. This workspace's driver cannot initialize the installed CUDA runtime, so an actual GPU training/timing check remains open. The tested PyTorch wheel is 2.13.0+cu130. CUDA 13 requires an R580-or-newer compatible driver; NVIDIA's compatibility guide documents limits and PTX caveats. Verify the final worker with `doctor` rather than assuming a version number alone guarantees compatibility. [NVIDIA compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html), [PyTorch CUDA support matrix](https://github.com/pytorch/pytorch/blob/main/RELEASE.md).
+`doctor` performs a CUDA tensor allocation and matrix operation when CUDA is requested. It does not repair drivers. The 2026-11-06 verification host could not initialize its installed CUDA runtime; that historical observation does not diagnose another worker. Actual GPU training/timing qualification remains open. The tested PyTorch wheel is 2.13.0+cu130. CUDA 13 requires an R580-or-newer compatible driver; NVIDIA's compatibility guide documents limits and PTX caveats. Verify the final worker with `doctor` rather than assuming a version number alone guarantees compatibility. [NVIDIA compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html), [PyTorch CUDA support matrix](https://github.com/pytorch/pytorch/blob/main/RELEASE.md).
 
-The default resource policy assigns one GPU to neural methods and four CPU threads to each job. Conventional references use CPU. Folds and configurations execute sequentially. Set `CUDA_VISIBLE_DEVICES` before starting a worker to select its GPU. CPU thread limits apply to Torch and existing BLAS/OpenMP pools. Local MLP/FT validation and inference batches are capped by both the configured prediction limit and the fit batch size, avoiding a larger attention-memory requirement at evaluation time. The 3,600-second configuration limit is a configurable, provisional library budget, not a hard process deadline; individual native fits may overrun it. Calibrate it before the final freeze.
+The default resource policy assigns one GPU to neural methods and four CPU threads to each job. Conventional references use CPU. Folds and configurations execute sequentially. Set `CUDA_VISIBLE_DEVICES` before starting a worker to select its GPU. CPU thread limits apply to Torch and existing BLAS/OpenMP pools. `runtime.prediction_batch_size` controls local MLP/FT/TabNet inference. Local MLP/FT validation and inference batches are capped by both that limit and the fit batch size, avoiding a larger attention-memory requirement at evaluation time. Native KNN/RealMLP/ModernNCA/TabM and fixed TabPFN do not receive this setting; qualify their own batching and memory policies separately. The 3,600-second configuration limit is a configurable, provisional library budget, not a hard process deadline; individual native fits may overrun it. Calibrate it before the final freeze.
 
 ## Prepare datasets
 
@@ -95,7 +95,7 @@ uv run --frozen thesis \
   run
 ```
 
-This shortened pilot is for infrastructure validation, not a final model comparison. To change paths or budgets, pass repeated `--set KEY=VALUE` options or edit YAML. Unknown settings/model parameters fail validation. All resolved settings enter the manifest. Native KNN/RealMLP/ModernNCA/TabM search spaces come from pinned TabArena generators. For the local six methods, sampled searched values overwrite same-key defaults/overrides; for the native four, configured parameters are applied after sampling and stay fixed. A `model_overrides` value therefore does not freeze a searched parameter uniformly across methods. Inspect [the catalog](../src/tabular_thesis/experiments/catalog.py) before fixing a searched parameter.
+This shortened pilot is for infrastructure validation, not a final model comparison. To change paths or budgets, pass repeated `--set KEY=VALUE` options or edit YAML. Unknown settings/model parameters fail validation. All resolved settings enter the manifest. Native KNN/RealMLP/ModernNCA/TabM search spaces come from pinned TabArena generators; their YAML `search_space` entries are not consumed by the catalog, even if populated. Fixed TabPFN also ignores `search_space`. Only the six local methods use YAML search spaces. For the local six methods, sampled searched values overwrite same-key defaults/overrides; for the native four, configured parameters are applied after sampling and stay fixed. A `model_overrides` value therefore does not freeze a searched parameter uniformly across methods. Inspect [the catalog](../src/tabular_thesis/experiments/catalog.py) before fixing a searched parameter.
 
 Each configuration owns a locked job directory containing its identity, effective model/child parameters, seeds, timing/memory metadata, compressed aligned OOF/test probabilities, and completion checksums. Unique attempt records preserve retry/interruption history. Inner validation row IDs are saved. A failed attempt writes an explicit status and traceback. The runner removes temporary fit files and releases unused memory after each attempt, including failures. The runner continues independent configuration jobs and returns nonzero if any fail. Repeating an unchanged command verifies completed artifacts and retries unfinished/failed work. Interrupted work never counts as complete. Resume restarts the whole unfinished configuration; it does not resume individual fold checkpoints. Fitted model files are discarded, and changing study identity does not reuse previous models automatically.
 
@@ -106,6 +106,22 @@ Reporting requires every declared job to be completed or explicitly failed. Fail
 Study identity includes source/lock digest, selected library versions, resolved settings, input identities and hardware. Git commit and image digest are not recorded automatically: preserve them separately. Main secondary metrics are implemented, but threshold selection, calibration experiments, significance/uncertainty analysis, Elo and thesis plots are not supplied by the reporting CLI.
 
 Do not combine inner folds as independent observations. Across-task inference uses datasets, and separate reporting conditions remain separate comparisons. Confirmatory contrasts, multiplicity rules, effect sizes, uncertainty, and the two targeted studies still need their final scientific freeze.
+
+### Report costs and memory boundaries
+
+The [report implementation](../src/tabular_thesis/experiments/reporting.py) defines these fields:
+
+| Field | Meaning |
+| --- | --- |
+| `search_fit_seconds` | Sum of fit times from successful configuration records; excludes failed fits and previous attempts. Repeated on every condition row for the same task/method. |
+| `search_wall_seconds` | Sum of recorded attempt wall times, including failures and retries. Null if any attempt remains `running` after interruption because its duration is unknown. Excludes study setup, final cleanup and report generation. |
+| `selected_fit_seconds` | Sum of successful fit times for configurations with positive condition weights; not multiplied by those weights. |
+| `selected_inference_seconds` | Sum of the selected configurations' timed test prediction passes. Does not include cached probability combination or metric computation. |
+| `selection_seconds` | Time for the whole task/method's cached selection and greedy ensemble construction, repeated on its condition rows. Recomputed when regenerating reports. |
+
+Do not sum repeated search/selection costs across D/T/T+E. `weights` aligns with `configuration_indices`, which can have gaps after failed random candidates. The inherited metric key `log_loss_val` holds outer-test log loss.
+
+Memory stays in each job's `records/result.json`; it is not a report CSV column. TabArena 0.1.0 tracks memory around `fit`, not the test prediction pass: CPU RSS and PyTorch allocated/reserved GPU memory, with `gpu_tracking_enabled` indicating availability. These are not full-process VRAM or whole-attempt peak measurements. Qualify inference memory separately, especially for KNN and TabPFN. Evidence: the pinned `tabarena.benchmark.exec_models.base.AbstractExecModel.fit_custom` and `_collect_memory_usage`, plus `tabarena.utils.memory_utils`.
 
 ## Containers
 
@@ -122,7 +138,7 @@ docker compose -f docker/docker-compose.yml run --rm worker weights
 docker compose -f docker/docker-compose.yml run --rm worker run
 ```
 
-Mounts preserve the same cache/result layout as native execution. The image uses pinned Python/uv tags and the dependency lock; freeze its resulting digest for final experiments. Container build/execution has not been validated here: Docker daemon access is denied and the Compose plugin is absent. These definitions are a deployment candidate, not a certified worker image.
+Mounts preserve the same cache/result layout as native execution. The image uses pinned Python/uv tags and the dependency lock; freeze its resulting digest for final experiments. Container build/execution remains unqualified. The 2026-11-06 verification host lacked Docker daemon access and the Compose plugin; check these prerequisites independently on each worker. These definitions are a deployment candidate, not a certified worker image.
 
 For multiple machines, use independent output directories and explicit dataset/model selections. The runner prevents concurrent ownership of an identical local job; it is not a distributed scheduler or an artifact-merging service. Preserve each worker's manifest and hardware identity. Start with one representative GPU pilot, then size the full matrix from measured runtime, RAM, VRAM, and artifact volume.
 

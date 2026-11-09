@@ -1,4 +1,4 @@
-"""Visualization utilities for experiment results."""
+"""Standalone plotting helpers; not a reporting or training-size study runner."""
 
 from __future__ import annotations
 
@@ -15,6 +15,9 @@ def plot_model_comparison(
     save_path: Path | None = None,
 ) -> None:
     """Bar chart comparing models across datasets.
+
+    Supply complete model/dataset mappings for study results: this legacy
+    helper displays missing entries as zero and does not report failures.
 
     Args:
         results: Nested dict ``{model_name: {dataset_name: score}}``.

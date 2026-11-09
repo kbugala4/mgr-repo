@@ -12,10 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 def set_seed(seed: int = 42) -> None:
-    """Set all random seeds for reproducible experiments.
+    """Seed Python, NumPy and available PyTorch generators for direct callers.
 
-    Configures Python, NumPy, and (if available) PyTorch random
-    number generators. Enables deterministic mode in PyTorch.
+    Requests deterministic PyTorch algorithms with warnings for unsupported
+    operations. PYTHONHASHSEED affects subsequently started interpreters, not
+    the current interpreter's hash seed. The main runner uses FitContext and
+    native fold seeds instead of calling this helper.
 
     Args:
         seed: Integer seed value.

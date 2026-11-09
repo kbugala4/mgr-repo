@@ -1,4 +1,9 @@
-"""Statistical significance tests for model comparison."""
+"""Standalone statistical helpers; not called by the reporting CLI.
+
+For the accepted study, datasets are the across-task inference units.
+These helpers do not validate independence, metric comparability, or apply
+multiplicity corrections; the final analysis remains to be frozen.
+"""
 
 from __future__ import annotations
 
@@ -25,12 +30,13 @@ def wilcoxon_test(
 ) -> StatTestResult:
     """Wilcoxon signed-rank test for paired model comparison.
 
-    Tests whether two models have significantly different performance
-    across multiple datasets or seeds.
+    Callers must supply paired observations with justified independence and
+    comparable differences. Do not pool folds, seeds, or reporting conditions
+    as independent datasets, or mix raw AUC and log-loss differences.
 
     Args:
-        scores_a: Metric scores for model A (one per dataset/seed).
-        scores_b: Metric scores for model B (one per dataset/seed).
+        scores_a: Metric scores for model A (one per comparison unit).
+        scores_b: Paired metric scores for model B in the same unit order.
         alpha: Significance level.
 
     Returns:
