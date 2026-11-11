@@ -20,6 +20,10 @@ Accepted and revised on **2026-11-05**. The initial main study uses the **twelve
 
 This is a custom twelve-dataset study using TabArena's lightweight evaluation approach. It is not the complete official TabArena-Lite benchmark, nor an exact reproduction of every original model condition. In particular, the fixed TabPFN-3.5 condition differs from the original paper's tuned TabPFNv2 condition.
 
+Revised **2026-11-11**: local MLP, FT-Transformer and TabNet stop at their advisory fold budgets while retaining usable completed training. They predict the cost of another epoch after each completed epoch; MLP/FT-Transformer also abandon a later partial epoch and restore the best completed checkpoint. TabNet finishes the current epoch before its native stop and best-weight restoration, so it can overrun by the remaining epoch and validation work. A deadline reached before any completed epoch still fails explicitly. Fold `hyperparameters_fit` records `budget_truncated`, `completed_epochs`, `granted_seconds`, `fit_seconds_wrapper` and `effective_batch_size`. Native methods, dependency pins, seeds, fold counts and the configuration budget are unchanged. This budget fix changes source identity; existing results remain in their original directories.
+
+FT-Transformer caps its effective batch using a 4 GiB allowance for a single float32 attention-score tensor, rounded down to a power of two with an eight-row floor. At 1,776 predictors this caps an eight-head model at 32 rows and a four-head model at 64 rows; validation/inference use the same ceiling. This is a memory heuristic, not a total-VRAM guarantee. The proposed automatic batch thresholds and multiplier search remain unaccepted in this checkout; the three methods retain their configured integer defaults and fixed search pools. Any later accepted pool revision would cover all twelve datasets (36 method/dataset pairings), with reruns launched separately by the owner.
+
 ## Selection, ensembling, and caching
 
 For each ordinary tunable method and dataset:

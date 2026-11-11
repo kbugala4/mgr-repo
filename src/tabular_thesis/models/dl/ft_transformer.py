@@ -5,6 +5,9 @@ from torch import nn
 
 from tabular_thesis.models.dl.torch_classifier import TorchClassifier
 
+# Bounds one float32 attention-score tensor, not total training VRAM; floor is eight rows.
+ATTENTION_BUDGET_BYTES = 4 * 1024**3
+
 
 class _FTTransformerNetwork(nn.Module):
     def __init__(
@@ -45,6 +48,12 @@ class _FTTransformerNetwork(nn.Module):
 
 class FTTransformerModel(TorchClassifier):
     separate_inputs = True
+
+    def _batch_size(self, X):
+        score_bytes_per_row = self.params["attention_n_heads"] * (X.shape[1] + 1) ** 2 * 4
+        maximum = ATTENTION_BUDGET_BYTES // score_bytes_per_row
+        cap = 1 << max(3, maximum.bit_length() - 1)
+        return min(super()._batch_size(X), cap)
 
     def _network(self, n_classes, arrays):
         params = {

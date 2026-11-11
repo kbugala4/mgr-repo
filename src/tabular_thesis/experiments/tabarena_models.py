@@ -63,6 +63,8 @@ class ThesisModelAdapter(AbstractModel):
             categorical_columns=categorical,
         )
         self.params_trained = dict(self.model.params)
+        if self.model.is_deep_learning:
+            self.params_trained.update(self.model.training_info_)
 
     @classmethod
     def supported_problem_types(cls):
