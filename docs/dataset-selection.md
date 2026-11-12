@@ -15,7 +15,7 @@ Sizes below are source/reference expectations except for German Credit, Ionosphe
 | 3 | Credit Card Fraud | OpenML dataset 1597; audit source equivalence | 284,807 | 30 expected, numerical; current loader retains row-ID features | 2 | Severe minority-class imbalance |
 | 4 | HIGGS subset | OpenML dataset 23512 | 98,050 | 28, numerical | 2 | Balanced numerical physics reference |
 | 5 | Amazon Employee Access | OpenML dataset 4135 | 32,769 | 9, categorical | 2 | High-cardinality categoricals and imbalance |
-| 6 | Santander Customer Satisfaction | Kaggle competition training data | 76,020 | 369, numerical | 2 | Wider numerical data and imbalance |
+| 6 | Santander Customer Satisfaction | OpenML dataset **46859**, version 2 | 76,020 | 369, numerical | 2 | Wider numerical data and imbalance |
 | 7 | Online Shoppers Purchasing Intention | UCI dataset 468 | 12,330 | 17, mixed | 2 | Mixed commerce data and imbalance |
 | 8 | Diabetes 130-US Hospitals | UCI dataset 296 (configured source) | 101,766 | 47 intended predictors, mixed | 3 | Missingness, patient structure, multiclass readmission |
 | 9 | Helena | OpenML dataset **41169** | 65,196 | 27, numerical | 100 | Many-class prediction |
@@ -23,7 +23,7 @@ Sizes below are source/reference expectations except for German Credit, Ionosphe
 | 11 | Ionosphere | UCI dataset **52** | 351 | 34, numerical before constant-feature removal | 2 | Naturally small numerical classification |
 | 12 | Bioresponse | OpenML dataset **4134** | 3,751 | 1,776, molecular descriptors | 2 | High dimensionality relative to training size |
 
-Use one declared source/version per task in final experiments. The active repository supports the four declared UCI archive routes and the seven pinned OpenML dataset IDs/versions. Santander uses the official competition CSV at `data/raw/santander/train.csv`; do not substitute a similarly named Santander competition.
+Use one declared source/version per task in final experiments. All twelve accepted datasets download automatically: four UCI archive routes and eight pinned OpenML dataset IDs/versions. Source revision **2026-11-12**: Santander now uses public OpenML dataset 46859 version 2, mirroring the original Customer Satisfaction competition data. Its target remains `TARGET`; the mirror already drops `ID` and rows with missing target labels. OpenML reports 76,020 labeled rows, 369 numerical predictors and two classes. This is not a substitution with another Santander competition. The metadata was checked against OpenML; full raw-data equivalence, row order and prepared hashes remain audit gates.
 
 ## Configured source identities
 
@@ -36,7 +36,7 @@ These values mirror `configs/dataset/*.yaml`, not OpenML task identifiers. All s
 | `credit_fraud` | OpenML 1597 | 1 | `Class` | 2 |
 | `higgs` | OpenML 23512 | 2 | `class` | 2 |
 | `amazon` | OpenML 4135 | 1 | `target` | 2 |
-| `santander` | Local official competition CSV | 1 | `TARGET` | 2 |
+| `santander` | OpenML 46859 | 2 | `TARGET` | 2 |
 | `online_shoppers` | UCI archive 468 | 1 | `Revenue` | 2 |
 | `diabetes` | UCI archive 296 | 1 | `readmitted` | 3 |
 | `helena` | OpenML 41169 | 1 | `class` | 100 |
@@ -46,9 +46,11 @@ These values mirror `configs/dataset/*.yaml`, not OpenML task identifiers. All s
 
 UCI `version: 1` is an internal declaration, not an immutable upstream archive revision. UCI URLs are live; freeze prepared hashes or distribute verified prepared files. OpenML IDs/versions are explicit. The current [repository](../src/tabular_thesis/data/tasks.py) checks cached source settings and hashes, target/classes and partition feasibility; it does not automatically certify source independence, leakage or feature availability.
 
-Diabetes declares coded identifiers/diagnoses as categorical, preserves `patient_nbr` only as split metadata and excludes `encounter_id`. Its observed task has 101,766 rows, 47 predictors and 71,518 patient groups. It uses patient-disjoint outer and inner partitions. Santander excludes `ID`. OpenML loading explicitly requests `include_row_id=True`; Credit Fraud currently has no exclusions, so returned `Time` is retained. Audit that role and its prediction-time interpretation before freezing the final feature policy. HIGGS is the 98,050-row source subset, not the original 11-million-row source.
+Diabetes declares coded identifiers/diagnoses as categorical, preserves `patient_nbr` only as split metadata and excludes `encounter_id`. Its observed task has 101,766 rows, 47 predictors and 71,518 patient groups. It uses patient-disjoint outer and inner partitions. Santander's OpenML mirror already omits `ID`, so its configuration has no identifier exclusion. OpenML loading explicitly requests `include_row_id=True`; Credit Fraud currently has no exclusions, so returned `Time` is retained. Audit that role and its prediction-time interpretation before freezing the final feature policy. HIGGS is the 98,050-row source subset, not the original 11-million-row source.
 
 Preparation stores normalized Parquet plus its manifest under `data/prepared/NAME/`. `expected_sha256` may be frozen after preparation; it is then checked against that normalized file. No implicit row truncation is applied. Label encoding and its class mapping are persisted, so rare-class analysis must resolve the raw outcome explicitly.
+
+The former Santander local-CSV cache has a different source identity and is not reused for the mirror. Preserve it and prepare the OpenML source in a separate data directory as described in [setup](setup.md#prepare-datasets); existing results are not rewritten or treated as equivalent automatically.
 
 ## Accepted substitutions
 
@@ -88,6 +90,7 @@ For controlled training-size experiments, form outer and inner partitions first,
 
 ## Source and reference evidence
 
+- [OpenML Santander 46859 metadata](https://www.openml.org/api/v1/json/data/46859), [features](https://www.openml.org/api/v1/json/data/features/46859), and [qualities](https://www.openml.org/api/v1/json/data/qualities/46859): version 2, target `TARGET`, 76,020 rows, 370 columns including target; the mirror omits `ID`.
 - [UCI German Credit](https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data): original mixed and numeric representations; use the mixed source.
 - [UCI Ionosphere](https://archive.ics.uci.edu/dataset/52/ionosphere): radar classification, 351 rows and 34 features.
 - [OpenML Bioresponse](https://www.openml.org/search?type=data&id=4134&sort=runs): molecular descriptors; exclude the target from predictor counts.

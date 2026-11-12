@@ -36,11 +36,10 @@ Dataset definitions live in `configs/dataset/*.yaml`; the study selection lives 
 
 | Source | Datasets | Acquisition |
 | --- | --- | --- |
-| OpenML | Adult, Covertype, Credit Fraud, HIGGS subset, Amazon, Helena, Bioresponse | Explicit dataset ID and version; original feature metadata preserved |
+| OpenML | Adult, Covertype, Credit Fraud, HIGGS subset, Amazon, Santander, Helena, Bioresponse | Explicit dataset ID and version; original feature metadata preserved |
 | UCI | German Credit, Ionosphere, Online Shoppers, Diabetes 130-US | Source archive downloaded once and parsed without extracting arbitrary paths |
-| Kaggle competition | Santander Customer Satisfaction | Official training CSV supplied locally after the user satisfies competition access requirements |
 
-Acquire Santander from the [official competition](https://www.kaggle.com/competitions/santander-customer-satisfaction/data). Place the extracted file at `data/raw/santander/train.csv`; the runner excludes `ID` and uses `TARGET`. Competition access may require a Kaggle account and acceptance of its rules. The runner does not accept those rules or substitute a different dataset.
+All twelve datasets are downloaded by `prepare`. Santander Customer Satisfaction uses [OpenML dataset 46859](https://www.openml.org/d/46859), version 2, with target `TARGET`. This public mirror already omits the original `ID` column and reports 76,020 rows and 369 predictors. No local competition CSV is required.
 
 ```bash
 uv run --frozen thesis prepare
@@ -53,6 +52,8 @@ uv run --frozen thesis --set 'datasets=[ionosphere]' prepare
 ```
 
 Preparation writes `data/prepared/NAME/data.parquet` and `manifest.json`. The manifest records source settings, normalized-file SHA-256, rows, and columns. Subsequent preparation verifies and reuses the cache. A changed definition or corrupt cache fails explicitly. Files are committed atomically under a source lock. `prepare` checks required columns, class counts and outer-split feasibility; actual inner-fold validation is checked during the backend run. These checks do not certify absence of duplicates, target leakage or cohort errors. Diabetes uses `patient_nbr` for grouped splitting and removes both patient and encounter identifiers from predictors.
+
+An existing Santander cache prepared from the former local CSV is incompatible with the OpenML source identity. It is preserved and rejected rather than silently relabeled or overwritten. Prepare the new source under a separate data root, for example `uv run --frozen thesis --set paths.data=data-openml --set 'datasets=[santander]' prepare`, and use that same root for subsequent commands. Keep old raw files, manifests and results for provenance; changing the source produces a new study identity. The legacy/custom `local_csv` loader remains supported, but no accepted dataset uses it.
 
 OpenML, Hugging Face, and library caches live under `data/cache/`. Prepared data contain raw feature values and declared feature types. Imputers, encoders, scaling, and learned model preprocessing fit the relevant training fold. IID KNN optimized LOO fits preprocessing on the outer development population while excluding each row's label from its neighbor prediction. Grouped KNN uses eight training-fold-specific transformations. The fixed TabPFN path may fit preprocessing on the entire outer development set because it has no inner training/search stage.
 

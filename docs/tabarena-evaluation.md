@@ -61,6 +61,7 @@ Cache dataset and split identities, ground truth, validation/test probabilities,
 
 ## Dataset validity and interpretation
 
+- Source revision **2026-11-12**: Santander uses OpenML dataset 46859 version 2 (`TARGET`, 369 predictors, no `ID` column), replacing local-CSV acquisition. All twelve accepted datasets now download through OpenML or UCI. Source hashes, row order and split identities must be audited for the new mirror; existing local-source predictions are not automatically equivalent or reused. The method pool, folds, seeds and search budgets are unchanged.
 - Audit source identity, duplicates, target leakage, class counts, and group/temporal structure for all twelve accepted datasets before freezing executable inputs. Each class must have enough examples for the declared outer and inner partitions.
 - Diabetes implements patient-group constraints at both outer and inner levels. Temporal splitting is not implemented: a configured `time` field raises `NotImplementedError`. If audits require another group or temporal prediction claim, implement and freeze that adaptation before execution; do not silently apply IID stratification.
 - Fit learned preprocessing on the relevant training partition, with the declared native IID KNN feature-preprocessing exception. Fixed TabPFN uses the full outer development context. Use justified model-specific transformations.

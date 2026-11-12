@@ -31,7 +31,8 @@ class DatasetMeta:
 
     Attributes:
         name: Human-readable dataset name (e.g. 'adult').
-        source: Configured route ('openml', 'uci_zip', 'local_csv').
+        source: Configured route ('openml' or 'uci_zip' for accepted datasets;
+            'local_csv' remains available for legacy/custom sources).
         source_id: OpenML or UCI dataset ID, if applicable.
         task: Classification task type.
         target_column: Name of the target column.

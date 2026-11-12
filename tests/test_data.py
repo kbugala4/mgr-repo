@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from collections import Counter
+from dataclasses import replace
+from types import SimpleNamespace
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +13,82 @@ import pytest
 from tabular_thesis.data.preprocessor import MinimalPreprocessor
 from tabular_thesis.data.registry import DatasetMeta, TaskType
 from tabular_thesis.data.splitter import SplitRatios
+from tabular_thesis.data.tasks import DatasetRepository
+from tabular_thesis.experiments.configuration import ConfigResolver, default_config_directory
+from tabular_thesis.experiments.runtime import configure_caches
+
+
+def test_all_accepted_datasets_have_automatic_sources():
+    resolver = ConfigResolver(default_config_directory())
+    sources = Counter(resolver.dataset(name).source for name in resolver.study().datasets)
+    assert sources == {"openml": 8, "uci_zip": 4}
+    santander = resolver.dataset("santander")
+    assert (santander.source_id, santander.version, santander.target) == (46859, 2, "TARGET")
+    assert santander.exclude == []
+    assert santander.local_file is None
+
+
+def test_santander_uses_openml_schema_and_version(tmp_path, monkeypatch):
+    configure_caches(tmp_path / "cache")
+    import openml
+
+    config = ConfigResolver(default_config_directory()).dataset("santander")
+    X = pd.DataFrame({"var3": range(60), "var15": range(60, 120)})
+    y = pd.Series(pd.Categorical(["0.0", "1.0"] * 30), name="TARGET")
+
+    def get_data(**kwargs):
+        assert kwargs == {
+            "dataset_format": "dataframe", "target": "TARGET", "include_row_id": True
+        }
+        return X.copy(), y.copy(), [False, False], X.columns.tolist()
+
+    dataset = SimpleNamespace(version=2, get_data=get_data)
+    calls = []
+
+    def get_dataset(source_id, *, download_data):
+        calls.append(source_id)
+        assert source_id == 46859 and download_data is True
+        return dataset
+
+    monkeypatch.setattr(openml.datasets, "get_dataset", get_dataset)
+    repository = DatasetRepository(tmp_path)
+    task = repository.prepare(config)
+    assert calls == [46859]
+    assert task.X.columns.tolist() == ["var3", "var15"]
+    assert task.classes == ["0.0", "1.0"]
+    np.testing.assert_array_equal(task.y, np.tile([0, 1], 30))
+    assert task.source_identity["source"]["source_id"] == 46859
+    assert task.source_identity["source"]["version"] == 2
+    assert repository.prepare(config).source_identity == task.source_identity
+    assert calls == [46859]
+    assert not (tmp_path / "raw").exists()
+    dataset.version = 1
+    with pytest.raises(ValueError, match="Unexpected OpenML version"):
+        repository._download(config)
+
+
+def test_old_santander_csv_cache_is_preserved_and_not_reused(tmp_path, monkeypatch):
+    config = ConfigResolver(default_config_directory()).dataset("santander")
+    legacy = replace(
+        config, source="local_csv", source_id=0, version=1,
+        local_file="santander/train.csv", exclude=["ID"],
+    )
+    raw = tmp_path / "raw" / "santander" / "train.csv"
+    raw.parent.mkdir(parents=True)
+    pd.DataFrame({"ID": range(60), "var3": range(60), "TARGET": [0, 1] * 30}).to_csv(
+        raw, index=False
+    )
+    repository = DatasetRepository(tmp_path)
+    repository.prepare(legacy)
+    directory = tmp_path / "prepared" / "santander"
+    saved = {path: path.read_bytes() for path in [raw, *directory.iterdir()]}
+    monkeypatch.setattr(
+        repository, "_download", lambda _: pytest.fail("Incompatible cache was overwritten")
+    )
+    with pytest.raises(ValueError, match="Cached source definition differs"):
+        repository.prepare(config)
+    for path, content in saved.items():
+        assert path.read_bytes() == content
 
 
 class TestDatasetMeta:

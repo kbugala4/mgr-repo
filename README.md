@@ -10,7 +10,7 @@ The runner implements the accepted TabArena Lite adaptation: one outer partition
 
 Use Linux x86-64, Python 3.11, [uv](https://docs.astral.sh/uv/getting-started/installation/), and a working NVIDIA driver for the complete study. The locked PyTorch distribution includes CUDA; the host still needs a compatible driver. GPU requests fail explicitly when CUDA is unavailable.
 
-After acquiring Santander's competition CSV and configuring any required model access, run from the repository root:
+After configuring any required model access, run from the repository root:
 
 ```bash
 bash scripts/bootstrap.sh
@@ -20,7 +20,7 @@ uv run --frozen thesis plan
 uv run --frozen thesis run
 ```
 
-`prepare` downloads eleven public datasets from explicit OpenML dataset IDs/versions or live UCI archives. Santander requires `data/raw/santander/train.csv` from the official competition. Downloads become verified Parquet caches with source manifests and SHA-256 hashes. `weights` fetches the exact TabPFN-3.5 revision and verifies its published file hash. Neither operation runs training.
+`prepare` downloads all twelve datasets from explicit OpenML dataset IDs/versions or live UCI archives. Santander uses the public OpenML mirror, dataset 46859 version 2; no manually supplied CSV is required. Downloads become verified Parquet caches with source manifests and SHA-256 hashes. `weights` fetches the exact TabPFN-3.5 revision and verifies its published file hash. Neither operation runs training.
 
 `run` writes `report.json` and `report.csv` and prints the study directory when all configuration jobs succeed. Repeating the same command reuses compatible completed jobs and retries failed jobs. Failed configurations retain tracebacks; any failure makes the command exit nonzero and skips automatic reporting. Manual reporting can exclude explicitly failed random configurations once every job was attempted; it rejects failed defaults or incomplete work. Changing the resolved configuration, data identity, code, dependencies, or recorded hardware produces another study directory.
 

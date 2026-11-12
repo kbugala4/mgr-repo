@@ -192,8 +192,7 @@ class DatasetRepository:
                 raise ValueError("local_file must stay inside data/raw")
             if not path.is_file():
                 raise FileNotFoundError(
-                    f"Place the officially acquired {config.name} training CSV at {path}. "
-                    "Santander competition access may require accepting Kaggle's rules."
+                    f"Place the configured {config.name} CSV at {path}."
                 )
             return pd.read_csv(path), []
         if config.source != "uci_zip":
