@@ -10,6 +10,7 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from tabular_thesis.models.base import BaseModel
+from tabular_thesis.models.dl.batching import dense_batch, resolve
 from tabular_thesis.models.dl.training import BudgetGuard
 from tabular_thesis.models.preprocessing import TabularPreprocessor, column_roles
 
@@ -152,7 +153,11 @@ class TorchClassifier(BaseModel):
         return (self.preprocessor_.transform(X, dense=True),)
 
     def _batch_size(self, X):
-        return self.params["batch_size"]
+        return resolve(
+            self.params["batch_size"],
+            dense_batch(len(X)),
+            self.params.get("batch_size_multiplier", 1.0),
+        )
 
     def _loader(self, arrays, y, *, shuffle, batch_size):
         tensors = [torch.as_tensor(array) for array in arrays]

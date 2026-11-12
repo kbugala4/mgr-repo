@@ -28,6 +28,8 @@ Local MLP, FT-Transformer and TabNet retain completed training when their adviso
 
 FT-Transformer also caps the fit batch to a power of two using a 4 GiB allowance for one float32 attention-score tensor (`heads × (features + 1)² × 4` bytes per row), with a minimum cap of eight rows. Validation and inference inherit the effective fit-batch ceiling. This heuristic does not bound total VRAM: attention blocks, gradients and other workers also consume memory, and the eight-row floor can exceed the allowance on extremely wide inputs. Inspect each fold's `effective_batch_size` and qualify the GPU workload before rerunning it.
 
+MLP, FT-Transformer and TabNet default to `batch_size: auto` using the fold-size rules in the [evaluation protocol](tabarena-evaluation.md), with a searched `batch_size_multiplier` of 0.5, 1 or 2. `model_overrides.<model>.batch_size=<int>` bypasses automatic sizing and ignores the multiplier; the FT attention cap and TabNet singleton correction can still change the effective batch. TabNet also accepts `virtual_batch_size: auto` or an integer ≥2, clamps it to the effective physical batch, increases it if needed to prevent singleton BatchNorm chunks, and records the corrected `effective_virtual_batch_size` per fold.
+
 ## Prepare datasets
 
 Dataset definitions live in `configs/dataset/*.yaml`; the study selection lives in `configs/config.yaml`.

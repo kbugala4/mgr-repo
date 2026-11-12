@@ -22,7 +22,27 @@ This is a custom twelve-dataset study using TabArena's lightweight evaluation ap
 
 Revised **2026-11-11**: local MLP, FT-Transformer and TabNet stop at their advisory fold budgets while retaining usable completed training. They predict the cost of another epoch after each completed epoch; MLP/FT-Transformer also abandon a later partial epoch and restore the best completed checkpoint. TabNet finishes the current epoch before its native stop and best-weight restoration, so it can overrun by the remaining epoch and validation work. A deadline reached before any completed epoch still fails explicitly. Fold `hyperparameters_fit` records `budget_truncated`, `completed_epochs`, `granted_seconds`, `fit_seconds_wrapper` and `effective_batch_size`. Native methods, dependency pins, seeds, fold counts and the configuration budget are unchanged. This budget fix changes source identity; existing results remain in their original directories.
 
-FT-Transformer caps its effective batch using a 4 GiB allowance for a single float32 attention-score tensor, rounded down to a power of two with an eight-row floor. At 1,776 predictors this caps an eight-head model at 32 rows and a four-head model at 64 rows; validation/inference use the same ceiling. This is a memory heuristic, not a total-VRAM guarantee. The proposed automatic batch thresholds and multiplier search remain unaccepted in this checkout; the three methods retain their configured integer defaults and fixed search pools. Any later accepted pool revision would cover all twelve datasets (36 method/dataset pairings), with reruns launched separately by the owner.
+Revised **2026-11-12**: MLP, FT-Transformer and TabNet use `batch_size: auto`, resolved independently within each inner training fold. A searched multiplier `{0.5, 1, 2}` replaces the former fixed batch lists; the declared default multiplier is 1. MLP/FT-Transformer use training-row count. TabNet weights row count by the sum of its fold-local encoder cardinalities (including reserved unknown-category slots): `n′ = n × (1 + total_cardinality / 5000)`. These are declared engineering heuristics, not empirically qualified optimal batches.
+
+| MLP/FT-Transformer training rows n | Base batch |
+| --- | ---: |
+| n < 2,000 | 64 |
+| 2,000 ≤ n < 8,000 | 128 |
+| 8,000 ≤ n < 32,000 | 256 |
+| 32,000 ≤ n < 128,000 | 512 |
+| n ≥ 128,000 | 1024 |
+
+| TabNet effective rows n′ | Base batch | Automatic virtual batch |
+| --- | ---: | ---: |
+| n′ < 2,000 | 128 | 128 |
+| 2,000 ≤ n′ < 8,000 | 256 | 128 |
+| 8,000 ≤ n′ < 32,000 | 1024 | 128 |
+| 32,000 ≤ n′ < 128,000 | 2048 | 256 |
+| n′ ≥ 128,000 | 4096 | 512 |
+
+Automatic batches are multiplied, rounded down to a power of two and bounded below by eight. Explicit integer batch requests ignore the multiplier. FT's attention cap and TabNet's singleton-batch correction still apply. TabNet's automatic virtual batch comes from the table without multiplying it; explicit virtual batches must be integers ≥2. The virtual batch is clamped to the effective physical batch, then increased if needed to avoid singleton BatchNorm chunks in full or remainder batches. Each fold records `effective_batch_size` and, for TabNet, the corrected `effective_virtual_batch_size`.
+
+FT-Transformer caps its effective batch using a 4 GiB allowance for a single float32 attention-score tensor, rounded down to a power of two with an eight-row floor. At 1,776 predictors this caps an eight-head model at 32 rows and a four-head model at 64 rows; validation/inference use the same ceiling. This is a memory heuristic, not a total-VRAM guarantee. The revised spaces replace random configurations for all three local methods on all twelve datasets (36 method/dataset pairings). Reruns are to be launched separately by the owner; they have not been executed as part of this change. Other methods, dependency pins, seeds, folds and configuration budgets are unchanged. Source/configuration identity changes, so existing cached results remain in their original directories.
 
 ## Selection, ensembling, and caching
 

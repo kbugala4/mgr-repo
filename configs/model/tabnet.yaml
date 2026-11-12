@@ -10,7 +10,9 @@ params:
   momentum: 0.3
   mask_type: sparsemax
   learning_rate: 0.02
-  batch_size: 256
+  batch_size: auto # fold-size rule, see models/dl/batching.py
+  batch_size_multiplier: 1
+  virtual_batch_size: auto
   epochs: 100
 search_space:
   n_d:
@@ -37,9 +39,8 @@ search_space:
   - float
   - 0.01
   - 0.4
-  batch_size:
+  batch_size_multiplier:
   - categorical
-  - - 128
-    - 256
-    - 512
-    - 1024
+  - - 0.5
+    - 1
+    - 2

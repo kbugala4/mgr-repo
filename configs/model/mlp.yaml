@@ -6,7 +6,8 @@ params:
   - 128
   dropout: 0.1
   learning_rate: 0.001
-  batch_size: 256
+  batch_size: auto # fold-size rule, see models/dl/batching.py
+  batch_size_multiplier: 1
   epochs: 100
   weight_decay: 0.0001
 search_space:
@@ -29,12 +30,11 @@ search_space:
   - float_log
   - 0.0001
   - 0.01
-  batch_size:
+  batch_size_multiplier:
   - categorical
-  - - 64
-    - 128
-    - 256
-    - 512
+  - - 0.5
+    - 1
+    - 2
   weight_decay:
   - float_log
   - 1.0e-06

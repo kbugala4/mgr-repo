@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,21 @@ class ModelSpec:
                 or params[name] < minimum
             ):
                 raise ValueError(f"{self.name}.{name} must be a positive integer")
+        if "virtual_batch_size" in params and params["virtual_batch_size"] != "auto":
+            value = params["virtual_batch_size"]
+            if not isinstance(value, int) or isinstance(value, bool) or value < 2:
+                raise ValueError(f"{self.name}.virtual_batch_size must be an integer >=2 or 'auto'")
+        if "batch_size_multiplier" in params:
+            value = params["batch_size_multiplier"]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not isfinite(value)
+                or value <= 0
+            ):
+                raise ValueError(
+                    f"{self.name}.batch_size_multiplier must be a finite positive number"
+                )
         for name in {
             "dropout",
             "attention_dropout",
@@ -54,7 +70,15 @@ class ModelSpec:
             raise ValueError("hidden_dims must contain positive layer widths")
 
 
-_TRAINING = {"random_state", "epochs", "patience", "batch_size", "learning_rate", "weight_decay"}
+_TRAINING = {
+    "random_state",
+    "epochs",
+    "patience",
+    "batch_size",
+    "batch_size_multiplier",
+    "learning_rate",
+    "weight_decay",
+}
 _SPECS = {
     "mlp": ModelSpec("mlp", True, parameters=frozenset(_TRAINING | {"hidden_dims", "dropout"})),
     "ft_transformer": ModelSpec(
@@ -87,6 +111,7 @@ _SPECS = {
                 "n_shared",
                 "momentum",
                 "mask_type",
+                "virtual_batch_size",
             }
         ),
     ),

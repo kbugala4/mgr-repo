@@ -8,6 +8,7 @@ from pytorch_tabnet.callbacks import Callback
 from pytorch_tabnet.tab_model import TabNetClassifier
 
 from tabular_thesis.models.base import BaseModel
+from tabular_thesis.models.dl.batching import resolve, tabnet_batch, tabnet_virtual_batch
 from tabular_thesis.models.dl.training import BudgetGuard
 from tabular_thesis.models.preprocessing import TabularPreprocessor, column_roles
 
@@ -55,7 +56,9 @@ class TabNetModel(BaseModel):
         self._store_columns(numerical, categorical)
         self.preprocessor_ = TabularPreprocessor(numerical, categorical).fit(X_train)
         train = self.preprocessor_.transform(X_train)
-        if len(train) < 2 or self.params["batch_size"] < 2:
+        if len(train) < 2 or (
+            self.params["batch_size"] != "auto" and self.params["batch_size"] < 2
+        ):
             raise ValueError("TabNet BatchNorm needs at least two training rows and batch_size >=2")
         validation = self.preprocessor_.transform(X_val) if X_val is not None else None
         self.preprocessing_time_sec = time.perf_counter() - start
@@ -85,16 +88,22 @@ class TabNetModel(BaseModel):
                 "weight_decay": self.params.get("weight_decay", 0.0),
             },
         )
+        auto_batch, auto_virtual = tabnet_batch(len(train), sum(self.preprocessor_.cardinalities))
+        batch_size = resolve(
+            self.params["batch_size"], auto_batch, self.params.get("batch_size_multiplier", 1.0)
+        )
+        virtual = self.params.get("virtual_batch_size", "auto")
+        virtual_batch_size = auto_virtual if virtual == "auto" else virtual
         # Avoid a singleton BatchNorm batch without dropping training observations.
-        batch_size = self.params["batch_size"]
         while len(train) % batch_size == 1:
             batch_size += 1
         self.effective_batch_size_ = batch_size
+        virtual_batch_size = tabnet_virtual_batch(len(train), batch_size, virtual_batch_size)
         kwargs = dict(
             max_epochs=self.params["epochs"],
             patience=self.params.get("patience", 10),
             batch_size=batch_size,
-            virtual_batch_size=min(128, batch_size),
+            virtual_batch_size=virtual_batch_size,
             drop_last=False,
             callbacks=[_Deadline(budget, self.params["epochs"])],
         )
@@ -107,6 +116,7 @@ class TabNetModel(BaseModel):
         self.model_.batch_size = self.context.prediction_batch_size
         self.completed_epochs_ = budget.completed_epochs
         self.training_info_ = budget.result(self.effective_batch_size_)
+        self.training_info_["effective_virtual_batch_size"] = virtual_batch_size
 
     def predict(self, X):
         return self.model_.predict(self.preprocessor_.transform(X))
