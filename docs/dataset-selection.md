@@ -12,7 +12,7 @@ Sizes below are source/reference expectations except for German Credit, Ionosphe
 | --- | --- | --- | ---: | ---: | ---: | --- |
 | 1 | Adult Income | OpenML dataset 1590 | 48,842 | 14, mixed | 2 | Mixed-feature income classification reference |
 | 2 | Covertype | OpenML dataset 1596 | 581,012 | 54, numerical/binary | 7 | Large multiclass task and scalability |
-| 3 | Credit Card Fraud | OpenML dataset 1597; audit source equivalence | 284,807 | 30 expected, numerical; current loader retains row-ID features | 2 | Severe minority-class imbalance |
+| 3 | Credit Card Fraud | OpenML dataset 1597; audit source equivalence | 284,807 | 29 numerical (`Time` excluded) | 2 | Severe minority-class imbalance |
 | 4 | HIGGS subset | OpenML dataset 23512 | 98,050 | 28, numerical | 2 | Balanced numerical physics reference |
 | 5 | Amazon Employee Access | OpenML dataset 4135 | 32,769 | 9, categorical | 2 | High-cardinality categoricals and imbalance |
 | 6 | Santander Customer Satisfaction | OpenML dataset **46859**, version 2 | 76,020 | 369, numerical | 2 | Wider numerical data and imbalance |
@@ -46,7 +46,7 @@ These values mirror `configs/dataset/*.yaml`, not OpenML task identifiers. All s
 
 UCI `version: 1` is an internal declaration, not an immutable upstream archive revision. UCI URLs are live; freeze prepared hashes or distribute verified prepared files. OpenML IDs/versions are explicit. The current [repository](../src/tabular_thesis/data/tasks.py) checks cached source settings and hashes, target/classes and partition feasibility; it does not automatically certify source independence, leakage or feature availability.
 
-Diabetes declares coded identifiers/diagnoses as categorical, preserves `patient_nbr` only as split metadata and excludes `encounter_id`. Its observed task has 101,766 rows, 47 predictors and 71,518 patient groups. It uses patient-disjoint outer and inner partitions. Santander's OpenML mirror already omits `ID`, so its configuration has no identifier exclusion. OpenML loading explicitly requests `include_row_id=True`; Credit Fraud currently has no exclusions, so returned `Time` is retained. Audit that role and its prediction-time interpretation before freezing the final feature policy. HIGGS is the 98,050-row source subset, not the original 11-million-row source.
+Diabetes declares coded identifiers/diagnoses as categorical, preserves `patient_nbr` only as split metadata and excludes `encounter_id`. Its observed task has 101,766 rows, 47 predictors and 71,518 patient groups. It uses patient-disjoint outer and inner partitions. Santander's OpenML mirror already omits `ID`, so its configuration has no identifier exclusion. OpenML loading explicitly requests `include_row_id=True`; Credit Fraud excludes `Time` (revision **2026-11-12**): it is seconds elapsed since the first transaction in the two-day collection window, monotone in row order, and not a transferable predictor. No other selected dataset contains such a timestamp; Online Shoppers' `Month`, `Weekend` and `SpecialDay` are calendar attributes of each session and remain predictors. HIGGS is the 98,050-row source subset, not the original 11-million-row source.
 
 Preparation stores normalized Parquet plus its manifest under `data/prepared/NAME/`. `expected_sha256` may be frozen after preparation; it is then checked against that normalized file. No implicit row truncation is applied. Label encoding and its class mapping are persisted, so rare-class analysis must resolve the raw outcome explicitly.
 
