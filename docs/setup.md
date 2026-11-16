@@ -85,7 +85,7 @@ uv run --frozen thesis report results/runs/thesis-lite/STUDY_HASH
 
 `run` expects prepared, verified dataset caches and the selected foundation checkpoint; it does not implicitly download them.
 
-`plan` prints the resolved typed configuration and nominal counts. It does not fetch data/weights, instantiate every random candidate or verify dataset/model feasibility. The main `run` does not include the two targeted mechanism studies: their runners remain pending.
+`plan` prints the resolved typed configuration and nominal counts. It does not fetch data/weights, instantiate every random candidate or verify dataset/model feasibility. The main `run` does not include the two targeted mechanism studies: use their implemented [separate launcher](mechanism-studies.md). Real-data and GPU qualification remain pending.
 
 The default twelve-dataset matrix contains 3,132 configuration jobs: 12 × (10 × 26 + 1). Most jobs train eight fold models; IID KNN uses native child LOO, and fixed TabPFN uses the complete outer development context. This is not a count of independent neural networks: RealMLP/TabM may internally train packed ensembles.
 
@@ -129,6 +129,12 @@ The [report implementation](../src/tabular_thesis/experiments/reporting.py) defi
 Do not sum repeated search/selection costs across D/T/T+E. `weights` aligns with `configuration_indices`, which can have gaps after failed random candidates. The inherited metric key `log_loss_val` holds outer-test log loss.
 
 Memory stays in each job's `records/result.json`; it is not a report CSV column. TabArena 0.1.0 tracks memory around `fit`, not the test prediction pass: CPU RSS and PyTorch allocated/reserved GPU memory, with `gpu_tracking_enabled` indicating availability. These are not full-process VRAM or whole-attempt peak measurements. Qualify inference memory separately, especially for KNN and TabPFN. Evidence: the pinned `tabarena.benchmark.exec_models.base.AbstractExecModel.fit_custom` and `_collect_memory_usage`, plus `tabarena.utils.memory_utils`.
+
+## Separate A/B mechanism studies
+
+Use `scripts/run_mechanism_studies.py` with `configs/studies/study-a.yaml` or `study-b.yaml`; start with `--dry-run`. The launcher calls the existing runner without automatic test reporting and writes separate `results/runs/study-a/` and `study-b/` registries. Metadata control, OOF diagnostics and explicit test analysis are separate commands. See [mechanism-study operation](mechanism-studies.md) for pilot commands, source verification and freeze requirements.
+
+Do not resume the original main campaign from changed A/B sources: their source digest creates a different study identity. Preserve original artifacts and the original worker checkout. A/B implementation and synthetic CPU checks do not qualify real-data GPU pilots or authorize a full campaign.
 
 ## Containers
 

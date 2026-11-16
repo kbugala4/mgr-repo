@@ -22,7 +22,7 @@ from tabular_thesis.experiments.artifacts import (
     fingerprint,
 )
 from tabular_thesis.experiments.catalog import ModelCatalog
-from tabular_thesis.experiments.configuration import ConfigResolver, StudyConfig
+from tabular_thesis.experiments.configuration import ConfigResolver, StudyConfig, study_snapshot
 from tabular_thesis.experiments.runtime import FitContext, configure_caches
 from tabular_thesis.models.specification import model_spec
 
@@ -61,7 +61,7 @@ class ExperimentRunner:
             self.resolver.snapshot(study)
             if tasks is None
             else {
-                "study": asdict(study),
+                "study": study_snapshot(study),
                 "models": {n: asdict(c) for n, c in configs.items()},
                 "datasets": sources,
             }
@@ -74,6 +74,10 @@ class ExperimentRunner:
             "protocol": "thesis-tabarena-lite-v1",
         }
         directory = self.store.run_directory(study.name, identity)
+        expected_directory = getattr(self, "expected_directory", None)
+        if expected_directory is not None and directory != Path(expected_directory):
+            raise ValueError("Condition identity changed; use a separate results directory")
+        self.directory = directory
         self.store.initialize(directory, identity)
         index = {
             "jobs": [
@@ -123,7 +127,16 @@ class ExperimentRunner:
                             # Failed attempts cannot leave stale native models in a retry.
                             shutil.rmtree(job / "work", ignore_errors=True)
                             out = TabArenaBackend(study).execute(
-                                task, model, model_cls, parameters, job / "work"
+                                task,
+                                model,
+                                model_cls,
+                                parameters,
+                                job / "work",
+                                **(
+                                    {"history_prefix": job / "records" / f"fold-{attempt.stem}"}
+                                    if parameters.get("_record_history")
+                                    else {}
+                                ),
                             )
                             self._save(job, job_identity, task, out, time.monotonic() - start)
                             atomic_json(
@@ -199,6 +212,20 @@ class ExperimentRunner:
         info = metadata.get("info", {})
         bag = info.get("bagged_info", {})
         folds = out.get("inner_validation_indices", [])
+        if identity["parameters"].get("_record_history"):
+            from tabular_thesis.experiments.mechanisms import nested_subset
+
+            children = list(info["children_info"].values())
+            for child, validation in zip(children, folds, strict=True):
+                trained = child["hyperparameters_fit"]
+                validation_ids = arrays["oof_indices"][np.asarray(validation)]
+                training_ids = np.setdiff1d(arrays["oof_indices"], validation_ids)
+                fraction = identity["parameters"].get("_train_fraction", 1.0)
+                selected = nested_subset(task.y[training_ids], fraction, trained["random_state"])
+                if not np.array_equal(trained["training_row_ids"], training_ids[selected]):
+                    raise ValueError("Training subset row IDs do not match task-space indices")
+                if not np.array_equal(trained["validation_row_ids"], validation_ids):
+                    raise ValueError("Validation row IDs do not match task-space indices")
         if model_spec(identity["model"]).evaluation != "fixed":
             expected = (
                 1
@@ -248,6 +275,25 @@ class ExperimentRunner:
             },
             **arrays,
         )
+        if identity["parameters"].get("_record_history"):
+            self.store.prediction_record(
+                directory,
+                "oof",
+                {"dataset": task.name, "classes": task.classes},
+                **{key: value for key, value in arrays.items() if not key.startswith("test_")},
+            )
+            for child in info["children_info"].values():
+                trained = child["hyperparameters_fit"]
+                if trained["budget_truncated"]:
+                    raise ValueError("A/B requires no time truncation; history was preserved")
+                if "best_epoch" in trained and trained["best_epoch"] is None:
+                    raise ValueError("No finite validation checkpoint; history was preserved")
+                if "_train_fraction" in identity["parameters"] and (
+                    trained["completed_epochs"] != identity["parameters"]["epochs"]
+                    or trained["optimizer_steps"]
+                    != trained["steps_per_epoch"] * identity["parameters"]["epochs"]
+                ):
+                    raise ValueError("B did not complete its declared update budget")
 
     @staticmethod
     def _host():

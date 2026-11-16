@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 from autogluon.core.models import AbstractModel
 
+from tabular_thesis.experiments.artifacts import atomic_json
+from tabular_thesis.experiments.mechanisms import balanced_class_weights, nested_subset
 from tabular_thesis.experiments.runtime import FitContext
 from tabular_thesis.models.preprocessing import column_roles
 from tabular_thesis.models.registry import get_model
@@ -35,11 +39,24 @@ class ThesisModelAdapter(AbstractModel):
     ):
         if sample_weight is not None:
             raise ValueError("Arbitrary sample weights require a separately declared condition")
+        params = self._get_model_params()
+        weighting = params.pop("_class_weighting", None)
+        fraction = params.pop("_train_fraction", None)
+        selection = params.pop("_selection_loss", None)
+        record = params.pop("_record_history", False)
+        history_prefix = params.pop("_history_prefix", None)
+        seed = int(self.random_seed or 0)
+        y = np.asarray(y)
+        if fraction is not None:
+            rows = nested_subset(y, fraction, seed)
+            X, y = X.iloc[rows], y[rows]
+            # Recompute native constant-column selection on the subset, not the full fold.
+            self._preprocess_set_features(X)
         # AutoGluon selects fold-local features; fit and inference must use that same schema.
         X = self.preprocess(X)
         if X_val is not None:
             X_val = self.preprocess(X_val)
-        params = self._get_model_params()
+        weights = None if weighting is None else balanced_class_weights(y, self.num_classes)
         prediction_batch_size = params.pop("_prediction_batch_size", 4096)
         requested_device = params.pop("_requested_device", "cuda" if num_gpus else "cpu")
         if requested_device == "cuda" and not num_gpus:
@@ -49,8 +66,12 @@ class ThesisModelAdapter(AbstractModel):
             device="cuda" if num_gpus else "cpu",
             num_cpus=num_cpus,
             time_limit=time_limit,
-            seed=int(self.random_seed or 0),
+            seed=seed,
             prediction_batch_size=prediction_batch_size,
+            class_weights=weights,
+            weighted_validation=weights is not None and selection is None,
+            unweighted_selection=selection == "unweighted",
+            record_history=record,
         )
         self.model.set_context(context)
         numerical, categorical = column_roles(X, None, None)
@@ -63,8 +84,19 @@ class ThesisModelAdapter(AbstractModel):
             categorical_columns=categorical,
         )
         self.params_trained = dict(self.model.params)
-        if self.model.is_deep_learning:
-            self.params_trained.update(self.model.training_info_)
+        if self.model.is_deep_learning or record:
+            self.params_trained.update(getattr(self.model, "training_info_", {}))
+        if record:
+            self.params_trained.update(
+                class_weights=weights,
+                training_rows=len(y),
+                training_class_counts=np.bincount(y, minlength=self.num_classes).tolist(),
+                training_row_ids=[int(i) for i in X.index],
+                validation_row_ids=[int(i) for i in X_val.index],
+                row_id_space="task",
+            )
+            if history_prefix is not None:
+                atomic_json(Path(f"{history_prefix}-{seed}.json"), self.params_trained)
 
     @classmethod
     def supported_problem_types(cls):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import time
 
 import numpy as np
@@ -75,7 +76,8 @@ class TorchClassifier(BaseModel):
             )
         )
         best_state, best_loss, patience = None, float("inf"), 0
-        for _ in range(self.params["epochs"]):
+        history, best_epoch, steps = [], None, 0
+        for epoch in range(1, self.params["epochs"] + 1):
             epoch_started = budget.start_epoch()
             self.network_.train()
             for batch in train_loader:
@@ -88,6 +90,7 @@ class TorchClassifier(BaseModel):
                 optimizer.zero_grad()
                 criterion(self.network_(*inputs), labels).backward()
                 optimizer.step()
+                steps += 1
             if budget.truncated:
                 break
             if validation_loader is not None:
@@ -105,8 +108,18 @@ class TorchClassifier(BaseModel):
                         ).item()
                         count += len(labels)
                 loss = loss_sum / count
+                unweighted_loss = loss
+                weighted_loss = (
+                    self._evaluation_loss(validation_loader, criterion.weight)
+                    if weights is not None
+                    and (self.context.record_history or self.context.weighted_validation)
+                    else loss
+                )
+                if self.context.weighted_validation:
+                    loss = weighted_loss
                 if loss < best_loss:
                     best_loss, patience = loss, 0
+                    best_epoch = epoch
                     best_state = {
                         k: value.detach().cpu().clone()
                         for k, value in self.network_.state_dict().items()
@@ -120,15 +133,74 @@ class TorchClassifier(BaseModel):
                     for k, value in self.network_.state_dict().items()
                 }
             early_stopped = patience >= self.params.get("patience", 10)
-            if budget.finish_epoch(
-                epoch_started, self.params["epochs"], early_stopped=early_stopped
-            ) or early_stopped:
+            if self.context.record_history:
+                if validation_loader is None:
+                    raise ValueError("Training history requires validation data")
+                self.network_.eval()
+                train_loss = self._evaluation_loss(
+                    self._loader(
+                        train_inputs,
+                        y_train,
+                        shuffle=False,
+                        batch_size=min(
+                            self.context.prediction_batch_size, self.effective_batch_size_
+                        ),
+                    )
+                )
+                with torch.no_grad():
+                    norm = torch.sqrt(
+                        sum(p.pow(2).sum() for p in self.network_.parameters())
+                    ).item()
+                history.append(
+                    {
+                        "epoch": epoch,
+                        "optimizer_steps": steps,
+                        **{
+                            key: float(value) if math.isfinite(value) else None
+                            for key, value in {
+                                "train_loss": train_loss,
+                                "val_loss": unweighted_loss,
+                                "val_loss_weighted": weighted_loss,
+                                "param_norm": norm,
+                            }.items()
+                        },
+                    }
+                )
+            if (
+                budget.finish_epoch(
+                    epoch_started, self.params["epochs"], early_stopped=early_stopped
+                )
+                or early_stopped
+            ):
                 break
         if best_state is not None:
             self.network_.load_state_dict(best_state)
         self.network_.eval()
         self.completed_epochs_ = budget.completed_epochs
         self.training_info_ = budget.result(self.effective_batch_size_)
+        if self.context.record_history:
+            self.training_info_.update(
+                history=history,
+                best_epoch=best_epoch,
+                optimizer_steps=steps,
+                steps_per_epoch=len(train_loader),
+                selection_loss="weighted" if self.context.weighted_validation else "unweighted",
+                stop_reason=(
+                    "time_limit" if budget.truncated else "patience" if early_stopped else "epochs"
+                ),
+            )
+
+    def _evaluation_loss(self, loader, weights=None):
+        total, denominator = 0.0, 0.0
+        with torch.no_grad():
+            for batch in loader:
+                inputs = [x.to(self.device_) for x in batch[:-1]]
+                labels = batch[-1].to(self.device_)
+                total += nn.functional.cross_entropy(
+                    self.network_(*inputs), labels, weight=weights, reduction="sum"
+                ).item()
+                denominator += len(labels) if weights is None else weights[labels].sum().item()
+        return total / denominator
 
     def predict(self, X):
         return self.predict_proba(X).argmax(axis=1)

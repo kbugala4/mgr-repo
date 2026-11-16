@@ -47,7 +47,7 @@ Dates identify the first public paper/preprint, or the canonical historical publ
 | XGBoost | Chen and Guestrin, [XGBoost: A Scalable Tree Boosting System](https://arxiv.org/abs/1603.02754) | 2016-03-09 |
 | CatBoost | Prokhorenkova et al., [CatBoost: unbiased boosting with categorical features](https://arxiv.org/abs/1706.09516) | 2017-06-28 |
 
-Gorishniy et al. [S1] is also a tabular MLP reference. The current main MLP is a declared local ReLU/dropout/AdamW baseline with bounded one-hot input, not an exact reproduction of that paper’s recipe. The separate overfitting study still needs an independently frozen competent published recipe. Runs record exact effective implementations/settings and checkpoint identity.
+Gorishniy et al. [S1] is also a tabular MLP reference. The current main MLP is a declared local ReLU/dropout/AdamW baseline with bounded one-hot input, not an exact reproduction of that paper’s recipe. The separate overfitting study uses fixed local MLP configuration 21 under the revised targeted protocol; historical selection evidence and worker qualification remain open. Runs record exact effective implementations/settings and checkpoint identity.
 
 This pool covers early neural baselines, historically important tabular-specific architectures, improved dense networks, neighborhood-based prediction, efficient ensembling, and a contemporary pretrained foundation model. It does not experimentally cover every historical architecture family. The literature review can be broader than the experiment matrix.
 
@@ -85,7 +85,7 @@ Benchmark agreement is supporting evidence, not proof of universal superiority. 
 
 | Method | Era and role | Question it helps answer | Implementation route |
 | --- | --- | --- | --- |
-| **MLP** | Historical neural baseline | What does a conventional feed-forward network achieve under competent preprocessing and training? | Configured local ReLU/dropout/AdamW implementation, fold-local scaling and bounded one-hot input. See [implementation status](implementation-status.md); the targeted published recipe is separate. |
+| **MLP** | Historical neural baseline | What does a conventional feed-forward network achieve under competent preprocessing and training? | Configured local ReLU/dropout/AdamW implementation, fold-local scaling and bounded one-hot input. See [implementation status](implementation-status.md); the targeted configuration-21 ablation is separate. |
 | **TabNet** | Early specialized architecture; AAAI 2021, preprint 2019 | Can sequential sparse feature selection help on tables with irrelevant or heterogeneous features? | Pinned `pytorch-tabnet==4.1.0` adapter with categorical embeddings and task-aware evaluation. Method reference: [S8]. |
 | **FT-Transformer** | Established attention architecture; NeurIPS 2021 | How does feature-specific tokenization plus attention compare with dense networks? | Use the authors' implementation [I1]; the corrected adapter delegates feature-specific tokenization to that implementation. |
 | **RealMLP** | Developed dense-network approach; NeurIPS 2024 | How much of the gap can a stronger preprocessing/training/regularization recipe close? | Use a pinned authors' `pytabkit` implementation [I2]. Record the exact TD/HPO variant and effective configuration. |

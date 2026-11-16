@@ -16,6 +16,9 @@ class FitContext:
     seed: int = 42
     class_weights: tuple[float, ...] | None = None
     prediction_batch_size: int = 4096
+    weighted_validation: bool = False
+    unweighted_selection: bool = False
+    record_history: bool = False
 
     def validate(self) -> None:
         if self.device not in {"cpu", "cuda"}:

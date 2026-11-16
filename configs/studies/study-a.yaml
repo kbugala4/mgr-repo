@@ -1,0 +1,83 @@
+name: study-a
+seeds:
+- 0
+- 10
+- 20
+time_limit: 1000000
+conditions:
+- unweighted
+- weighted
+control_condition: weighted_unweighted_selection
+methods:
+- dataset: credit_fraud
+  model: mlp
+  rare_code: 1
+  source:
+    run: 340bad9404fe547a68bb5f786eb0dfe0bf63904ee765fae755a89d0d0b67077f
+    configuration_index: 12
+  params:
+    batch_size: auto
+    batch_size_multiplier: 2
+    dropout: 0.42114238729749925
+    epochs: 100
+    hidden_dims:
+    - 256
+    - 256
+    learning_rate: 0.007568292060167618
+    weight_decay: 0.003795853142670641
+- dataset: santander
+  model: mlp
+  rare_code: 1
+  source:
+    run: ce877af70d573e02f4e11d1cbabf64c095a38d1e6e6f1547d276b6cba689c718
+    configuration_index: 8
+  params:
+    batch_size: auto
+    batch_size_multiplier: 1
+    dropout: 0.4744427686266666
+    epochs: 100
+    hidden_dims:
+    - 256
+    - 256
+    learning_rate: 0.0013383707472536777
+    weight_decay: 3.480695326785272e-05
+- dataset: amazon
+  model: mlp
+  rare_code: 0
+  source:
+    run: 1fddcb0cd5e649df18009269024c43c1c3ff1dfd5ba3d089ccc19e4015748a5f
+    configuration_index: 2
+  params:
+    batch_size: auto
+    batch_size_multiplier: 2
+    dropout: 0.22291637642679557
+    epochs: 100
+    hidden_dims:
+    - 512
+    - 256
+    - 128
+    learning_rate: 0.00013066739238053285
+    weight_decay: 0.0029154431891537554
+- dataset: amazon
+  model: catboost
+  rare_code: 0
+  source:
+    run: ae19760cfb8eda5a5e801177670feb458cd3a862ff433c527aa7ada0da7bfd1b
+    configuration_index: 23
+  params:
+    bagging_temperature: 6.2435404813379325
+    depth: 9
+    iterations: 745
+    l2_leaf_reg: 0.23420907100434143
+    learning_rate: 0.02102146663035812
+    random_strength: 4.165099478703662
+- dataset: credit_fraud
+  model: catboost
+  rare_code: 1
+  params: null
+  blocked_reason: Missing OOF-selected T configuration and source manifest
+- dataset: santander
+  model: catboost
+  rare_code: 1
+  params: null
+  blocked_reason: Missing OOF-selected T configuration and source manifest

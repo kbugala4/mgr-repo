@@ -31,6 +31,7 @@ class StudyConfig:
     random_configurations: int = 25
     inner_folds: int = 8
     outer_seed: int = 42
+    training_seed: int | None = None
     search_seed: int = 42
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     paths: PathsConfig = field(default_factory=PathsConfig)
@@ -86,6 +87,10 @@ class ConfigResolver:
                 raise ValueError("Duplicate models/datasets would repeat the same experiment")
         if config.inner_folds < 2 or config.random_configurations < 0:
             raise ValueError("inner_folds must be >=2 and random_configurations >=0")
+        if config.training_seed is not None and (
+            isinstance(config.training_seed, bool) or config.training_seed < 0
+        ):
+            raise ValueError("training_seed must be a nonnegative integer or null")
         if config.runtime.device not in {"cpu", "cuda"}:
             raise ValueError("runtime.device must be cpu or cuda")
         if (
@@ -149,10 +154,17 @@ class ConfigResolver:
 
     def snapshot(self, study: StudyConfig) -> dict:
         return {
-            "study": asdict(study),
+            "study": study_snapshot(study),
             "models": {name: asdict(c) for name, c in self.resolved_models(study).items()},
             "datasets": {name: asdict(self.dataset(name)) for name in study.datasets},
         }
+
+
+def study_snapshot(study: StudyConfig) -> dict:
+    snapshot = asdict(study)
+    if study.training_seed is None:
+        snapshot.pop("training_seed")
+    return snapshot
 
 
 def default_config_directory() -> Path:

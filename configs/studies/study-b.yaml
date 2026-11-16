@@ -1,0 +1,51 @@
+name: study-b
+seeds:
+- 0
+- 10
+- 20
+time_limit: 1000000
+fractions:
+- 0.25
+- 0.5
+- 1.0
+base:
+  batch_size: auto
+  batch_size_multiplier: 1
+  dropout: 0.44360637128816327
+  epochs: 100
+  hidden_dims:
+  - 128
+  - 64
+  learning_rate: 0.000583248659760873
+  weight_decay: 0.007706343825607382
+source_configuration_index: 21
+variants:
+  full: {}
+  no_dropout:
+    dropout: 0.0
+  no_weight_decay:
+    weight_decay: 0.0
+  no_both:
+    dropout: 0.0
+    weight_decay: 0.0
+batch_size:
+  german_credit: 64
+  ionosphere: 64
+  bioresponse: 128
+step_budget:
+  german_credit: 1000
+  ionosphere: 400
+  bioresponse: 1800
+expected_epochs:
+  german_credit:
+  - 334
+  - 200
+  - 100
+  ionosphere:
+  - 400
+  - 200
+  - 100
+  bioresponse:
+  - 360
+  - 200
+  - 100

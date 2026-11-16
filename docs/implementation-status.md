@@ -25,7 +25,7 @@ The main defaults are twelve datasets, eleven methods, one stratified three-fold
 
 Model implementations are deliberately heterogeneous where the methods require it:
 
-- MLP: an explicitly configured ReLU/dropout dense baseline, AdamW, train-only scaling and bounded one-hot encoding (at most 256 outputs per categorical feature). It is not labeled an exact reproduction of a particular published MLP recipe. The targeted overfitting baseline still needs its separate recipe freeze.
+- MLP: an explicitly configured ReLU/dropout dense baseline, AdamW, train-only scaling and bounded one-hot encoding (at most 256 outputs per categorical feature). It is not labeled an exact reproduction of a particular published MLP recipe. The targeted overfitting study now uses fixed configuration 21; its source-selection evidence still needs independent qualification.
 - FT-Transformer: `rtdl-revisiting-models==0.0.2`, with feature-specific numerical tokenization and categorical embeddings. Searched FFN dropout is consumed. Validation/inference batches respect the fit-memory ceiling and the configured prediction limit.
 - TabNet: `pytorch-tabnet==4.1.0`, categorical embeddings, task-aware validation metric, explicit device, and singleton-safe training batches.
 - RealMLP, ModernNCA, TabM: pinned TabArena adapters using their reference packages/implementation. Integration guards preserve training-fold category vocabularies and align unknown held-out categories. TabM and ModernNCA receive fold seeds. A scoped ModernNCA compatibility shim supplies the seed omitted by TabArena 0.1.0's noisy quantile-transformer factory and restores the original factory even on failure. The shim assumes the enforced sequential fitting policy; replace it before adding threaded fits in one process.
@@ -36,6 +36,21 @@ Model implementations are deliberately heterogeneous where the methods require i
 **KNN LOO caveat:** optimized child LOO excludes each row's label from its neighbor prediction, but fits preprocessing on the full outer development population. It is not exact leave-one-out refitting of every transformation. This is the declared native validation exception. Grouped KNN uses ordinary fold-local preprocessing. All other bagged methods fit learned preprocessing inside the inner training fold.
 
 ## Verification
+
+### A/B implementation qualification — 2026-11-15
+
+The refreshed-materials revision is documented in the [revision report](archive/badania-ab-2026-11-15/raport-rewizji-po-odswiezeniu.md). Historical reference scripts and full source-run IDs are now available; original campaign artifacts and the reported configuration-21 ranks are still unverified locally. The revision clarifies the stricter source-audit input policy and the limits of seed pairing, and corrects a stale setup statement. Executable code, plans and tests remain unchanged; the identifiable CPU evidence below is reused, without new training or GPU qualification.
+
+The optional A/B layer is implemented: independent training seeds, fold-only class weights, explicit validation selection, nested training subsets before learned preprocessing, full rounded B update budgets, durable epoch/iteration histories, separate registries and deferred outer-test scoring. Per-attempt fold histories are written before prediction and survive later failures and temporary-model deletion. The main default snapshot omits an unset training seed, and unflagged model metadata retains its existing keys. [Operation and remaining gates](mechanism-studies.md) and the [accepted protocol](tabarena-evaluation.md#required-targeted-studies) are authoritative.
+
+Local CPU qualification passed Ruff and **202 offline tests** (132 upstream warnings), synthetic A/B analyses and an eight-job baseline comparison against exported `79299f573975b45052803d8f26c350f10446e332`. The comparison used two synthetic mixed tasks, MLP/CatBoost, default plus one random configuration and eight folds (64 fits per revision), with identical bounded epoch/iteration settings. All probability/label/index arrays were bitwise identical and child `hyperparameters_fit` key sets matched. Timing/granted-budget values were excluded from metadata-value comparisons. This is synthetic infrastructure evidence, not a real-data or GPU equivalence claim.
+
+The final CPU smoke directory is `results/runs/smoke/37653f6198df429fbb092b6df3d860abc2afa5cdee6b378a1effb9274913e68b`: four jobs, 32 fold fits and six report rows. Repeating it retained four attempts and verified all completion checksums. Native split reconstruction was checked directly against saved AutoGluon fold IDs; nine synthetic class-count fixtures verify the declared B budgets, including 1002 German Credit updates. Real prepared-data counters remain an execution preflight, not a completed qualification.
+
+Standard `make check` and frozen smoke were attempted with environment synchronization disabled to honor the no-installation constraint, but uv could not lock its read-only cache. Equivalent checks used the existing Python 3.11.13 interpreter with explicit `PYTHONPATH=src` and `python -m` invocations. This does not qualify a fresh frozen installation. The local CUDA runtime remained unavailable; no GPU, TabPFN, container or real A/B pilot was run, and no full-campaign test predictions were inspected.
+
+Credit Fraud/CatBoost and Santander/CatBoost T configurations remain blocked. Other A parameters and B configuration 21 use the supplied full-precision handoff values; original selection manifests and freeze timing require independent review. Test-analysis entry points require a reviewer freeze; this implementation is not itself approval of that freeze or authorization to run the full studies.
+
 
 Santander source revision **2026-11-12**: live OpenML metadata confirmed dataset 46859 version 2, target `TARGET`, 76,020 rows, 369 numerical predictors and no `ID`. Offline regressions cover the configured automatic-source roster, OpenML version/schema/cache reuse and preservation/rejection of the former local-CSV cache. Ruff passed, **161 tests passed**, and CPU smoke completed **4 jobs, 32 fold fits and 6 report rows**. The Santander-only plan resolved the new source. Standard frozen `make check` and smoke remained blocked by the read-only uv cache, so checks used the existing Python 3.11 environment explicitly with `PYTHONPATH=src`. The complete Santander data file was not downloaded, and no GPU or full-campaign run was performed.
 
@@ -63,11 +78,11 @@ The accepted twelve-source pool covers naturally small, wide, imbalanced, mixed/
 
 1. Audit all twelve raw sources for distinct provenance, duplicates, leakage, feature timing, groups, sentinels and cohort rules. Freeze normalized input hashes and prediction populations. A configured temporal field currently raises `NotImplementedError`; temporal splitting is not implemented.
 2. Qualify the real GPU worker, actual pinned TabPFN access/inference, full-size high-cardinality/wide/100-class paths, runtime, RAM/VRAM, artifacts, interruption/recovery and container execution. Native time budgets are advisory rather than hard process deadlines.
-3. Implement the two required targeted runners: fold-specific class weighting, independent paired training seeds, validation-selected rare-class thresholds, competent fixed MLP recipe, nested training-only subsets, matched regularization controls and learning curves.
+3. Qualify the implemented A/B options and scripts on the target worker: fold weighting, independent paired seeds, state-selection control, nested training-only subsets, fixed configuration-21 regularization variants, full update budgets and durable learning histories. Supply missing CatBoost T sources and audit the historical configuration-21 selection. See [mechanism studies](mechanism-studies.md).
 4. Freeze primary contrasts, multiplicity, effect sizes and uncertainty. The reporting CLI does not provide the final inferential analysis, Elo, threshold optimization or calibration studies. Keep datasets as across-task inference units; inner folds and reporting conditions are dependent.
 5. Preserve committed source, prepared input hashes, dependency lock, checkpoint, split manifests and measured budgets before the campaign. The runner records executable source/lock digest, packages and hardware; record Git commit and image digest separately.
 
-Use [setup](setup.md) for installation and operation. Do not treat required but unimplemented mechanism studies as part of the main `run` command.
+Use [setup](setup.md) for installation and operation. Mechanism studies use their separate launcher; the main `run` command does not include A/B.
 
 ## Documentation alignment evidence
 

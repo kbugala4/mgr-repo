@@ -24,7 +24,7 @@ uv run --frozen thesis run
 
 `run` writes `report.json` and `report.csv` and prints the study directory when all configuration jobs succeed. Repeating the same command reuses compatible completed jobs and retries failed jobs. Failed configurations retain tracebacks; any failure makes the command exit nonzero and skips automatic reporting. Manual reporting can exclude explicitly failed random configurations once every job was attempted; it rejects failed defaults or incomplete work. Changing the resolved configuration, data identity, code, dependencies, or recorded hardware produces another study directory.
 
-See [setup](docs/setup.md) for CPU smoke checks, overrides, checkpoint access, containers, and moving caches between workers. The complete GPU matrix, all raw-data audits, and the two targeted mechanism studies still require qualification. Current evidence is in [implementation status](docs/implementation-status.md).
+See [setup](docs/setup.md) for CPU smoke checks, overrides, checkpoint access, containers, and moving caches between workers. The complete GPU matrix and raw-data audits still require qualification. The [A/B mechanism studies](docs/mechanism-studies.md) have separate plans, execution and analysis scripts; real-data/GPU qualification and full execution remain pending. Current evidence is in [implementation status](docs/implementation-status.md).
 
 ## Structure
 

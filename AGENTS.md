@@ -8,7 +8,7 @@ Read [README](README.md), [setup](docs/setup.md), [implementation status](docs/i
 - Four conventional references: logistic regression, KNN, XGBoost and CatBoost.
 - Twelve datasets defined in `configs/config.yaml` and documented in `docs/dataset-selection.md`.
 - Main protocol: one outer split, eight inner folds, default plus 25 random configurations and cached default/tuned/tuned-ensemble reports. IID KNN uses native child LOO; Diabetes KNN uses group folds. Fixed TabPFN has no HPO or fold ensemble.
-- Required weighting and matched MLP regularization/training-size studies are specified but not implemented. Active learning is optional. Do not expand the accepted pool automatically.
+- Required weighting and matched MLP regularization/training-size studies are implemented through optional A/B plans; real-data/GPU qualification and full execution remain separate gates. Active learning is optional. Do not expand the accepted pool automatically.
 
 ## Engineering and verification
 

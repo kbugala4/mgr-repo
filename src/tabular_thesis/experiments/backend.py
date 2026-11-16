@@ -75,6 +75,22 @@ class ValidatedRunner(OOFExperimentRunner):
         return out
 
 
+class DeferredTestRunner(ValidatedRunner):
+    """Cache predictions without evaluating the outer test during A/B training."""
+
+    def evaluate(self, y_true, y_pred, y_pred_proba):
+        return None
+
+
+class DeferredTestExperiment(AGModelBagExperiment):
+    def _enforce_finite_metric(self, out, cacher):
+        if out["metric_error"] is not None:
+            raise ValueError("A/B test evaluation must be deferred")
+        super()._enforce_finite_metric(
+            out={key: value for key, value in out.items() if key != "metric_error"}, cacher=cacher
+        )
+
+
 class TabArenaBackend:
     def __init__(self, study: StudyConfig):
         self.study = study
@@ -86,6 +102,7 @@ class TabArenaBackend:
         model_cls: type,
         parameters: dict,
         work_directory: Path,
+        history_prefix: Path | None = None,
     ) -> dict:
         study, spec = self.study, model_spec(model_name)
         train, test = task.outer_split(study.outer_seed, study.inner_folds)
@@ -107,6 +124,8 @@ class TabArenaBackend:
             **group_args,
         )
         parameters = copy.deepcopy(parameters)
+        if history_prefix is not None:
+            parameters["_history_prefix"] = str(history_prefix)
         if not spec.upstream and spec.evaluation != "fixed":
             parameters["_prediction_batch_size"] = study.runtime.prediction_batch_size
             parameters["_requested_device"] = study.runtime.device if spec.neural else "cpu"
@@ -129,11 +148,18 @@ class TabArenaBackend:
         else:
             parameters["ag_args_ensemble"] = {
                 "fold_fitting_strategy": "sequential_local",
-                "model_random_seed": study.outer_seed,
+                "model_random_seed": (
+                    study.outer_seed if study.training_seed is None else study.training_seed
+                ),
                 "vary_seed_across_folds": True,
                 "use_child_oof": spec.evaluation == "loo" and task.groups is None,
             }
-            experiment = AGModelBagExperiment(
+            experiment_type = (
+                DeferredTestExperiment
+                if parameters.get("_record_history")
+                else AGModelBagExperiment
+            )
+            experiment = experiment_type(
                 name=model_name,
                 model_cls=model_cls,
                 model_hyperparameters=parameters,
@@ -161,6 +187,8 @@ class TabArenaBackend:
                 },
             )
         experiment.experiment_cls = ValidatedRunner
+        if parameters.get("_record_history", False):
+            experiment.experiment_cls = DeferredTestRunner
         experiment.method_cls = TimedOuterWrapper if spec.evaluation == "fixed" else TimedBagWrapper
         # Per-child test predictions would repeat inference outside the timed stage.
         experiment.experiment_kwargs.update(compute_bag_info=False)

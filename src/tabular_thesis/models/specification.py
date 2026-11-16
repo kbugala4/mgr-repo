@@ -18,6 +18,18 @@ class ModelSpec:
         unknown = set(params) - self.parameters
         if unknown:
             raise ValueError(f"Unsupported parameters for {self.name}: {sorted(unknown)}")
+        if "_class_weighting" in params and params["_class_weighting"] != "balanced":
+            raise ValueError("_class_weighting must be balanced")
+        if "_selection_loss" in params and (
+            params["_selection_loss"] != "unweighted" or "_class_weighting" not in params
+        ):
+            raise ValueError("_selection_loss requires balanced weighting and unweighted selection")
+        if "_record_history" in params and not isinstance(params["_record_history"], bool):
+            raise ValueError("_record_history must be boolean")
+        if "_train_fraction" in params:
+            value = params["_train_fraction"]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 < value <= 1:
+                raise ValueError("_train_fraction must be in (0, 1]")
         for name in {
             "epochs",
             "n_epochs",
@@ -79,8 +91,15 @@ _TRAINING = {
     "learning_rate",
     "weight_decay",
 }
+_MECHANISMS = {"_class_weighting", "_selection_loss", "_record_history"}
 _SPECS = {
-    "mlp": ModelSpec("mlp", True, parameters=frozenset(_TRAINING | {"hidden_dims", "dropout"})),
+    "mlp": ModelSpec(
+        "mlp",
+        True,
+        parameters=frozenset(
+            _TRAINING | _MECHANISMS | {"hidden_dims", "dropout", "_train_fraction"}
+        ),
+    ),
     "ft_transformer": ModelSpec(
         "ft_transformer",
         True,
@@ -164,7 +183,8 @@ _SPECS = {
         "catboost",
         False,
         parameters=frozenset(
-            {
+            _MECHANISMS
+            | {
                 "random_state",
                 "iterations",
                 "depth",
