@@ -74,10 +74,26 @@ methods:
 - dataset: credit_fraud
   model: catboost
   rare_code: 1
-  params: null
-  blocked_reason: Missing OOF-selected T configuration and source manifest
+  source:
+    run: 340bad9404fe547a68bb5f786eb0dfe0bf63904ee765fae755a89d0d0b67077f
+    configuration_index: 17
+  params:
+    bagging_temperature: 4.494506741382034
+    depth: 4
+    iterations: 147
+    l2_leaf_reg: 0.12955517240662176
+    learning_rate: 0.09726568066784747
+    random_strength: 6.659223566174966
 - dataset: santander
   model: catboost
   rare_code: 1
-  params: null
-  blocked_reason: Missing OOF-selected T configuration and source manifest
+  source:
+    run: ce877af70d573e02f4e11d1cbabf64c095a38d1e6e6f1547d276b6cba689c718
+    configuration_index: 2
+  params:
+    bagging_temperature: 1.5599452033620265
+    depth: 6
+    iterations: 558
+    l2_leaf_reg: 3.9676050770529883
+    learning_rate: 0.07725378389307355
+    random_strength: 7.080725777960454

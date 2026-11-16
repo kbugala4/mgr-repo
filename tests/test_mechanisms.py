@@ -245,7 +245,7 @@ def test_plan_counts_and_german_1002(analysis):
     root = default_config_directory() / "studies"
     a = module.expand(module.load_plan(root / "study-a.yaml"))
     b = module.expand(module.load_plan(root / "study-b.yaml"))
-    assert len(a) == 36 and sum(bool(r["blocked"]) for r in a) == 12
+    assert len(a) == 36 and not any(r["blocked"] for r in a)
     assert len(b) == 108
     y = np.r_[np.zeros(408, dtype=int), np.ones(175, dtype=int)]
     folds = [(np.arange(len(y)), np.array([], dtype=int))] * 8

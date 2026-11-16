@@ -2,7 +2,7 @@
 
 The [evaluation protocol](tabarena-evaluation.md#required-targeted-studies) owns the accepted A/B design and numerical analysis rules. The plans in `configs/studies/` do not change main-study YAML, searches, dependency/checkpoint pins or method scope.
 
-**State on 2026-11-15:** implementation and synthetic CPU checks are available. Real-data pilots, GPU feasibility, campaign-worker identity, original OOF source-selection evidence and full A/B execution are not locally qualified. Credit Fraud/CatBoost and Santander/CatBoost have no supplied T configuration and remain blocked. Configuration 21 and the other four A configurations use full-precision values supplied in the handoff; their historical selection is not claimed to have been independently reproduced.
+**State on 2026-11-16:** all six A configurations and B configuration 21 are supplied. `results/final/final_summary.csv` identifies Credit Fraud/CatBoost 17 and Santander/CatBoost 2; `final_configurations.csv` supplies their full-precision parameters. All other A parameters and the B base match that export exactly. Original manifests/OOF, real-data pilots, GPU feasibility and full A/B execution remain locally unqualified. See the [launch plan](ab-launch-plan.md) for source evidence, checks and concurrent execution.
 
 ## Plan and qualify
 
@@ -15,7 +15,7 @@ make check
 uv run --frozen thesis --set runtime.device=cpu smoke
 ```
 
-Dry run reads no datasets and trains nothing. A expands to 36 evaluations (12 blocked); B expands to 108. B dry-run epochs are declared expectations, not evidence from data. Before real B execution, the launcher loads only an already-prepared dataset, reconstructs pinned native development folds, checks subset rounding and step budgets, and compares actual fit counters afterward. Missing data raises an error; the launcher never downloads it.
+Dry run reads no datasets and trains nothing. A expands to 36 evaluations with no missing-parameter blocks; B expands to 108. B dry-run epochs are declared expectations, not evidence from data. Before real B execution, the launcher loads only an already-prepared dataset, reconstructs pinned native development folds, checks subset rounding and step budgets, and compares actual fit counters afterward. Missing data raises an error; the launcher never downloads it.
 
 Next worker qualification, requiring separately authorized real pilots:
 
