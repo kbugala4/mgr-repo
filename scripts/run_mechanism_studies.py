@@ -326,7 +326,8 @@ def main():
                 task = DatasetRepository(args.data).load(resolver.dataset(row["dataset"]))
                 if plan.name == "study-b":
                     entry["budget_evidence"] = preflight_b(row, task, study)
-                elif task.classes[row["rare_code"]] != str(row["rare_code"]):
+                # elif task.classes[row["rare_code"]] != str(row["rare_code"]):
+                elif float(task.classes[row["rare_code"]]) != row["rare_code"]:
                     raise ValueError("Semantic rare-class mapping differs from the approved plan")
                 runner = ExperimentRunner(resolver, study)
                 if previous and previous.get("directory"):
