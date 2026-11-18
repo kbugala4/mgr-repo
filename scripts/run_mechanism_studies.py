@@ -256,6 +256,11 @@ def main():
     parser.add_argument("--control", help="DATASET/MODEL")
     parser.add_argument("--control-decision", type=Path)
     parser.add_argument(
+        "--control-source",
+        type=Path,
+        help="Registry the control decision was made on (default: this results root)",
+    )
+    parser.add_argument(
         "--verify-source", type=Path, help="Main study directory containing run hashes"
     )
     parser.add_argument("--data", type=Path, default=Path("data"))
