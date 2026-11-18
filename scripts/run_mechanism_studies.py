@@ -304,7 +304,7 @@ def main():
     if args.control:
         if args.control_decision is None:
             parser.error("--control requires --control-decision")
-        check_control(args.control_decision, args.control, registry)
+        check_control(args.control_decision, args.control, args.control_source or registry)
     registry.parent.mkdir(parents=True, exist_ok=True)
     failures = []
     with FileLock(str(registry) + ".lock", timeout=0):
