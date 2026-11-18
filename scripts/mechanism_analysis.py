@@ -327,7 +327,7 @@ def read_predictions(row, partition):
     if len(np.unique(indices)) != len(indices) or p.shape != (len(y), 2):
         raise ValueError("Invalid prediction population")
     rare = row.get("rare_code", 1)
-    if "rare_code" in row and float(record["classes"][rare]) != str(rare):
+    if "rare_code" in row and float(record["classes"][rare]) != rare:
         raise ValueError("Rare-class mapping mismatch")
     return indices[order], (y == rare).astype(int), p[:, rare].astype(np.float64)
 
